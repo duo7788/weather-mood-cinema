@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Weather Mood Cinema</title>
+    <meta
+      name="description"
+      content="Weather Mood Cinema recommends a movie mood based on the weather in your city."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">Weather-based movie discovery</p>
+          <h1 id="page-title">Weather Mood Cinema</h1>
+          <p class="lede">
+            Enter a city, read the sky, and find the film that matches the day.
+          </p>
+          <form class="city-form" aria-label="Preview city form">
+            <label for="city">City</label>
+            <div class="input-row">
+              <input id="city" name="city" type="text" value="Shanghai" autocomplete="address-level2">
+              <button type="submit">Preview Mood</button>
+            </div>
+          </form>
+        </div>
+
+        <article class="recommendation" aria-label="Sample recommendation">
+          <div class="poster" aria-hidden="true">
+            <span>Rain</span>
+          </div>
+          <div class="recommendation-copy">
+            <p class="city-line"><span id="preview-city">Shanghai</span> feels like</p>
+            <h2>Rainy Window Drama</h2>
+            <p>
+              Low clouds, soft streets, and a slower evening call for a reflective drama with
+              city lights and quiet momentum.
+            </p>
+            <dl class="mood-stats">
+              <div>
+                <dt>Weather</dt>
+                <dd>Light rain</dd>
+              </div>
+              <div>
+                <dt>Mood</dt>
+                <dd>Melancholy</dd>
+              </div>
+              <div>
+                <dt>Pick</dt>
+                <dd>Drama</dd>
+              </div>
+            </dl>
+          </div>
+        </article>
+      </section>
+
+      <section class="workflow" aria-labelledby="workflow-title">
+        <h2 id="workflow-title">How it works</h2>
+        <div class="steps">
+          <article>
+            <span>01</span>
+            <h3>Read the weather</h3>
+            <p>The future version will fetch current city weather from a weather API.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Map the mood</h3>
+            <p>Weather conditions become simple moods like sunlit, stormy, foggy, or cozy.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Find the film</h3>
+            <p>TMDB movie metadata will help choose titles, posters, and short summaries.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="credits" aria-labelledby="credits-title">
+        <h2 id="credits-title">Credits</h2>
+        <p>
+          This product uses the TMDB API but is not endorsed or certified by TMDB.
+          Movie data is planned to come from
+          <a href="https://www.themoviedb.org" rel="noreferrer">The Movie Database</a>.
+        </p>
+      </section>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>
