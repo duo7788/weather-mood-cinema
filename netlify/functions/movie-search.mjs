@@ -1,10 +1,10 @@
-const jsonResponse = (statusCode, body) => ({
-  statusCode,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify(body),
-});
+const jsonResponse = (status, body) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
 const normalizeMovie = (movie) => ({
   id: movie.id,
@@ -15,7 +15,7 @@ const normalizeMovie = (movie) => ({
   rating: movie.vote_average,
 });
 
-exports.handler = async (event) => {
+export default async (request) => {
   const apiKey = process.env.TMDB_API_KEY;
 
   if (!apiKey) {
@@ -24,15 +24,16 @@ exports.handler = async (event) => {
     });
   }
 
-  const query = event.queryStringParameters?.query?.trim() || "rainy day drama";
-  const url = new URL("https://api.themoviedb.org/3/search/movie");
+  const requestUrl = new URL(request.url);
+  const query = requestUrl.searchParams.get("query")?.trim() || "rainy day drama";
+  const tmdbUrl = new URL("https://api.themoviedb.org/3/search/movie");
 
-  url.searchParams.set("api_key", apiKey);
-  url.searchParams.set("query", query);
-  url.searchParams.set("language", "en-US");
-  url.searchParams.set("include_adult", "false");
+  tmdbUrl.searchParams.set("api_key", apiKey);
+  tmdbUrl.searchParams.set("query", query);
+  tmdbUrl.searchParams.set("language", "en-US");
+  tmdbUrl.searchParams.set("include_adult", "false");
 
-  const tmdbResponse = await fetch(url);
+  const tmdbResponse = await fetch(tmdbUrl);
   const tmdbData = await tmdbResponse.json();
 
   if (!tmdbResponse.ok) {
