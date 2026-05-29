@@ -135,6 +135,8 @@ button:hover {
 }
 
 .poster {
+  position: relative;
+  overflow: hidden;
   display: grid;
   place-items: end start;
   min-height: 260px;
@@ -146,6 +148,20 @@ button:hover {
   padding: 16px;
   font-size: 1.8rem;
   font-weight: 900;
+}
+
+.poster-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.poster span {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.34);
 }
 
 .city-line {
