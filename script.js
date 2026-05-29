@@ -1,4 +1,4 @@
-const MOVIE_QUERY = "rainy drama";
+const MOVIE_QUERY = "rain";
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
 
 const buildMovieSearchUrl = (query) =>
