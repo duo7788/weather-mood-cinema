@@ -1,8 +1,77 @@
 const MOVIE_QUERY = "rain";
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
+const TEMPERATURE_ORDER = ["cold", "cool", "mild", "warm", "hot"];
 
 const buildMovieSearchUrl = (query) =>
   `/.netlify/functions/movie-search?query=${encodeURIComponent(query)}`;
+
+const getAdjacentTemperatureTags = (temperatureTag) => {
+  const index = TEMPERATURE_ORDER.indexOf(temperatureTag);
+
+  if (index === -1) {
+    return [];
+  }
+
+  return TEMPERATURE_ORDER.filter((_, itemIndex) => Math.abs(itemIndex - index) === 1);
+};
+
+const deriveAtmosphereTags = (library, weatherTag, temperatureTag, limit = 3) => {
+  const counts = new Map();
+
+  library
+    .filter(
+      (movie) =>
+        movie.weatherTags.includes(weatherTag) || movie.temperatureTags.includes(temperatureTag),
+    )
+    .forEach((movie) => {
+      movie.atmosphereTags.forEach((tag) => {
+        counts.set(tag, (counts.get(tag) || 0) + 1);
+      });
+    });
+
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([tag]) => tag);
+};
+
+const scoreMovie = (movie, preferences) => {
+  let score = 0;
+
+  if (movie.weatherTags.includes(preferences.weatherTag)) {
+    score += 4;
+  }
+
+  if (movie.moodTags.includes(preferences.moodTag)) {
+    score += 4;
+  }
+
+  if (movie.temperatureTags.includes(preferences.temperatureTag)) {
+    score += 2;
+  } else if (
+    getAdjacentTemperatureTags(preferences.temperatureTag).some((tag) =>
+      movie.temperatureTags.includes(tag),
+    )
+  ) {
+    score += 1;
+  }
+
+  preferences.atmosphereTags.forEach((tag) => {
+    if (movie.atmosphereTags.includes(tag)) {
+      score += 1;
+    }
+  });
+
+  return score;
+};
+
+const pickTopCandidate = (candidates, random = Math.random, poolSize = 5) => {
+  const sorted = [...candidates].sort((a, b) => b.score - a.score);
+  const pool = sorted.filter((item) => item.score > 0).slice(0, poolSize);
+  const candidatesToUse = pool.length > 0 ? pool : sorted.slice(0, poolSize);
+
+  return candidatesToUse[Math.floor(random() * candidatesToUse.length)];
+};
 
 const getPosterUrl = (posterPath) => (posterPath ? `${TMDB_IMAGE_BASE_URL}${posterPath}` : "");
 
@@ -94,7 +163,11 @@ if (typeof document !== "undefined") {
 if (typeof module !== "undefined") {
   module.exports = {
     buildMovieSearchUrl,
+    deriveAtmosphereTags,
+    getAdjacentTemperatureTags,
     getPosterUrl,
+    pickTopCandidate,
     renderMovieRecommendation,
+    scoreMovie,
   };
 }

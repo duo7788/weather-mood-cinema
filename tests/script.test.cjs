@@ -3,8 +3,12 @@ const test = require("node:test");
 
 const {
   buildMovieSearchUrl,
+  deriveAtmosphereTags,
+  getAdjacentTemperatureTags,
   getPosterUrl,
+  pickTopCandidate,
   renderMovieRecommendation,
+  scoreMovie,
 } = require("../script.js");
 
 test("builds the Netlify Function URL with an encoded query", () => {
@@ -46,4 +50,66 @@ test("renders a movie recommendation into the provided elements", () => {
   assert.equal(elements.posterImage.src, "https://image.tmdb.org/t/p/w342/rain-town.jpg");
   assert.equal(elements.posterImage.alt, "Poster for Rain Town");
   assert.equal(elements.posterLabel.hidden, true);
+});
+
+test("finds adjacent temperature tags", () => {
+  assert.deepEqual(getAdjacentTemperatureTags("cold"), ["cool"]);
+  assert.deepEqual(getAdjacentTemperatureTags("mild"), ["cool", "warm"]);
+  assert.deepEqual(getAdjacentTemperatureTags("hot"), ["warm"]);
+});
+
+test("derives atmosphere preferences from matching library movies", () => {
+  const library = [
+    {
+      weatherTags: ["rainy"],
+      temperatureTags: ["cool"],
+      atmosphereTags: ["urban", "interior", "noir"],
+    },
+    {
+      weatherTags: ["rainy"],
+      temperatureTags: ["mild"],
+      atmosphereTags: ["urban", "intimate"],
+    },
+    {
+      weatherTags: ["clear"],
+      temperatureTags: ["cool"],
+      atmosphereTags: ["road", "urban"],
+    },
+  ];
+
+  assert.deepEqual(deriveAtmosphereTags(library, "rainy", "cool"), [
+    "urban",
+    "interior",
+    "noir",
+  ]);
+});
+
+test("scores movies with weather, mood, temperature, adjacent temperature, and atmosphere", () => {
+  const movie = {
+    weatherTags: ["rainy"],
+    temperatureTags: ["cool"],
+    moodTags: ["sad"],
+    atmosphereTags: ["urban", "noir"],
+  };
+
+  assert.equal(
+    scoreMovie(movie, {
+      weatherTag: "rainy",
+      temperatureTag: "cold",
+      moodTag: "sad",
+      atmosphereTags: ["urban", "interior", "noir"],
+    }),
+    11,
+  );
+});
+
+test("picks from the highest scoring candidate pool", () => {
+  const candidates = [
+    { movie: { title: "A" }, score: 9 },
+    { movie: { title: "B" }, score: 8 },
+    { movie: { title: "C" }, score: 1 },
+  ];
+
+  const picked = pickTopCandidate(candidates, () => 0.99, 2);
+  assert.equal(picked.movie.title, "B");
 });
