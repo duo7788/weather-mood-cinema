@@ -82,3 +82,53 @@ test("searches TMDB with the query and returns normalized movie results", async 
     ],
   });
 });
+
+test("fetches TMDB movie details by id", async () => {
+  const originalKey = process.env.TMDB_API_KEY;
+  const originalFetch = global.fetch;
+
+  process.env.TMDB_API_KEY = "test-key";
+  let requestedUrl;
+
+  global.fetch = async (url) => {
+    requestedUrl = new URL(url);
+
+    return new Response(
+      JSON.stringify({
+        id: 843,
+        title: "In the Mood for Love",
+        overview: "A quiet story.",
+        poster_path: "/poster.jpg",
+        release_date: "2000-09-29",
+        vote_average: 8.1,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  };
+
+  const response = await handler(
+    new Request("https://weather-mood-cinema.netlify.app/.netlify/functions/movie-search?id=843"),
+  );
+
+  process.env.TMDB_API_KEY = originalKey;
+  global.fetch = originalFetch;
+
+  assert.equal(response.status, 200);
+  assert.equal(requestedUrl.origin, "https://api.themoviedb.org");
+  assert.equal(requestedUrl.pathname, "/3/movie/843");
+  assert.deepEqual(await readJson(response), {
+    movie: {
+      id: 843,
+      title: "In the Mood for Love",
+      overview: "A quiet story.",
+      posterPath: "/poster.jpg",
+      releaseDate: "2000-09-29",
+      rating: 8.1,
+    },
+  });
+});

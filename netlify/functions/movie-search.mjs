@@ -25,6 +25,28 @@ export default async (request) => {
   }
 
   const requestUrl = new URL(request.url);
+  const movieId = requestUrl.searchParams.get("id")?.trim();
+
+  if (movieId) {
+    const tmdbUrl = new URL(`https://api.themoviedb.org/3/movie/${movieId}`);
+
+    tmdbUrl.searchParams.set("api_key", apiKey);
+    tmdbUrl.searchParams.set("language", "en-US");
+
+    const tmdbResponse = await fetch(tmdbUrl);
+    const tmdbData = await tmdbResponse.json();
+
+    if (!tmdbResponse.ok) {
+      return jsonResponse(tmdbResponse.status, {
+        error: tmdbData.status_message || "TMDB request failed",
+      });
+    }
+
+    return jsonResponse(200, {
+      movie: normalizeMovie(tmdbData),
+    });
+  }
+
   const query = requestUrl.searchParams.get("query")?.trim() || "rainy day drama";
   const tmdbUrl = new URL("https://api.themoviedb.org/3/search/movie");
 
