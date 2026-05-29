@@ -6,7 +6,7 @@
     <title>Weather Mood Cinema</title>
     <meta
       name="description"
-      content="Weather Mood Cinema recommends a movie mood based on the weather in your city."
+      content="Weather Mood Cinema recommends a curated movie based on your city weather and mood."
     >
     <link rel="stylesheet" href="styles.css">
   </head>
@@ -17,77 +17,124 @@
           <p class="eyebrow">Weather-based movie discovery</p>
           <h1 id="page-title">Weather Mood Cinema</h1>
           <p class="lede">
-            Enter a city, read the sky, and find the film that matches the day.
+            Choose a city, pick the feeling you want tonight, and let the weather set the scene.
           </p>
-          <form class="city-form" aria-label="Preview city form">
+          <form class="city-form" aria-label="City weather form">
             <label for="city">City</label>
             <div class="input-row">
               <input id="city" name="city" type="text" value="Shanghai" autocomplete="address-level2">
-              <button type="submit">Preview Mood</button>
+              <button id="weather-button" type="submit">Check Weather</button>
             </div>
+            <p id="weather-error" class="form-message" role="status"></p>
           </form>
+          <button id="favorites-button" class="secondary-button" type="button">
+            Favorites <span id="favorites-count">0</span>
+          </button>
         </div>
 
-        <article class="recommendation" aria-label="Sample recommendation">
+        <article class="weather-card" aria-label="Selected city weather">
+          <p class="city-line">Selected city</p>
+          <h2 id="weather-city">Shanghai</h2>
+          <p id="weather-description">
+            Search for a city to turn current weather into a movie mood.
+          </p>
+          <dl class="weather-stats">
+            <div>
+              <dt>Temperature</dt>
+              <dd id="temperature-value">--</dd>
+            </div>
+            <div>
+              <dt>Weather</dt>
+              <dd id="weather-value">Waiting</dd>
+            </div>
+            <div>
+              <dt>Tag</dt>
+              <dd id="weather-mood-value">Unset</dd>
+            </div>
+          </dl>
+        </article>
+      </section>
+
+      <section class="mood-section" aria-labelledby="mood-title">
+        <div>
+          <p class="eyebrow">Mood layer</p>
+          <h2 id="mood-title">Pick tonight's feeling</h2>
+        </div>
+        <div class="mood-grid" role="group" aria-label="Movie mood">
+          <button type="button" class="mood-option" data-mood="relaxed" aria-pressed="false">Relaxed</button>
+          <button type="button" class="mood-option" data-mood="lonely" aria-pressed="false">Lonely</button>
+          <button type="button" class="mood-option" data-mood="healing" aria-pressed="false">Healing</button>
+          <button type="button" class="mood-option" data-mood="excited" aria-pressed="false">Excited</button>
+          <button type="button" class="mood-option" data-mood="nostalgic" aria-pressed="false">Nostalgic</button>
+          <button type="button" class="mood-option" data-mood="sad" aria-pressed="false">Sad</button>
+          <button type="button" class="mood-option" data-mood="gloomy" aria-pressed="false">Gloomy</button>
+          <button type="button" class="mood-option" data-mood="romantic" aria-pressed="false">Romantic</button>
+          <button type="button" class="mood-option" data-mood="tense" aria-pressed="false">Tense</button>
+        </div>
+        <button id="generate-button" class="generate-button" type="button" disabled>Generate</button>
+        <p id="generate-error" class="form-message" role="status"></p>
+      </section>
+
+      <section id="result-section" class="result-section" aria-labelledby="result-title" hidden>
+        <div class="result-heading">
+          <div>
+            <p class="eyebrow">Your weather mood pick</p>
+            <h2 id="result-title">Tonight's movie</h2>
+          </div>
+          <button id="back-button" class="secondary-button" type="button">Back</button>
+        </div>
+        <article class="recommendation" aria-label="Movie recommendation">
           <div class="poster" aria-hidden="true">
             <img id="movie-poster" class="poster-image" alt="" hidden>
-            <span id="poster-label">Rain</span>
+            <span id="poster-label">Cinema</span>
           </div>
           <div class="recommendation-copy">
-            <p class="city-line"><span id="preview-city">Shanghai</span> feels like</p>
-            <h2 id="movie-title">Rainy Window Drama</h2>
+            <p class="city-line"><span id="preview-city">Your city</span> feels like</p>
+            <h3 id="movie-title">Ready when you are</h3>
             <p id="movie-overview">
-              Low clouds, soft streets, and a slower evening call for a reflective drama with
-              city lights and quiet momentum.
+              Choose city weather and a mood to generate a curated movie recommendation.
             </p>
             <dl class="mood-stats">
               <div>
                 <dt>Weather</dt>
-                <dd id="weather-value">Light rain</dd>
+                <dd id="result-weather-value">Waiting</dd>
               </div>
               <div>
                 <dt>Mood</dt>
-                <dd id="mood-value">Melancholy</dd>
+                <dd id="result-mood-value">Unset</dd>
               </div>
               <div>
                 <dt>Pick</dt>
-                <dd id="pick-value">Drama</dd>
+                <dd id="pick-value">Film</dd>
               </div>
             </dl>
+            <button id="save-favorite-button" class="generate-button" type="button" disabled>
+              Save Favorite
+            </button>
           </div>
         </article>
       </section>
 
-      <section class="workflow" aria-labelledby="workflow-title">
-        <h2 id="workflow-title">How it works</h2>
-        <div class="steps">
-          <article>
-            <span>01</span>
-            <h3>Read the weather</h3>
-            <p>The future version will fetch current city weather from a weather API.</p>
-          </article>
-          <article>
-            <span>02</span>
-            <h3>Map the mood</h3>
-            <p>Weather conditions become simple moods like sunlit, stormy, foggy, or cozy.</p>
-          </article>
-          <article>
-            <span>03</span>
-            <h3>Find the film</h3>
-            <p>TMDB movie metadata will help choose titles, posters, and short summaries.</p>
-          </article>
+      <aside id="favorites-panel" class="favorites-panel" aria-label="Favorites" hidden>
+        <div class="favorites-header">
+          <h2>Favorites</h2>
+          <button id="close-favorites-button" class="secondary-button" type="button">Close</button>
         </div>
-      </section>
+        <div id="favorites-list" class="favorites-list"></div>
+      </aside>
 
       <section class="credits" aria-labelledby="credits-title">
         <h2 id="credits-title">Credits</h2>
         <p>
           This product uses the TMDB API but is not endorsed or certified by TMDB.
-          Movie data is planned to come from
+          Movie data comes from
           <a href="https://www.themoviedb.org" rel="noreferrer">The Movie Database</a>.
+          Weather data comes from
+          <a href="https://open-meteo.com" rel="noreferrer">Open-Meteo</a>.
         </p>
       </section>
     </main>
+    <script src="movie-library.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

@@ -473,3 +473,11 @@ if (typeof module !== "undefined") {
     WEATHER_TAGS,
   };
 }
+
+if (typeof globalThis !== "undefined") {
+  globalThis.ATMOSPHERE_TAGS = ATMOSPHERE_TAGS;
+  globalThis.MOVIE_LIBRARY = MOVIE_LIBRARY;
+  globalThis.MOOD_TAGS = MOOD_TAGS;
+  globalThis.TEMPERATURE_TAGS = TEMPERATURE_TAGS;
+  globalThis.WEATHER_TAGS = WEATHER_TAGS;
+}

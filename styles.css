@@ -122,6 +122,129 @@ button:hover {
   background: var(--teal);
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.secondary-button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  background: rgba(255, 250, 240, 0.82);
+  color: var(--ink);
+}
+
+.hero-copy > .secondary-button {
+  margin-top: 16px;
+}
+
+.form-message {
+  min-height: 24px;
+  margin: 10px 0 0;
+  color: var(--coral);
+  font-weight: 700;
+}
+
+.weather-card,
+.mood-section,
+.result-section,
+.favorites-panel {
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 250, 240, 0.86);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.weather-card h2 {
+  margin-bottom: 12px;
+  color: var(--violet);
+  font-size: 2rem;
+  line-height: 1.05;
+}
+
+.weather-stats,
+.mood-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0 0;
+}
+
+.weather-stats div,
+.mood-stats div {
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 250, 240, 0.74);
+  padding: 12px;
+}
+
+.mood-section,
+.result-section {
+  margin-top: 38px;
+}
+
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mood-option {
+  border: 1px solid var(--line);
+  background: rgba(255, 250, 240, 0.82);
+  color: var(--ink);
+}
+
+.mood-option.is-selected {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: white;
+}
+
+.generate-button {
+  margin-top: 18px;
+}
+
+.result-heading,
+.favorites-header,
+.favorite-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.favorites-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 5;
+  width: min(420px, calc(100% - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+}
+
+.favorites-list {
+  display: grid;
+  gap: 12px;
+}
+
+.favorite-item {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.favorite-item h3 {
+  margin: 0 0 4px;
+}
+
+.favorite-item p,
+.empty-state {
+  margin: 0;
+  color: var(--muted);
+}
+
 .recommendation {
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);
@@ -169,7 +292,8 @@ button:hover {
   font-weight: 700;
 }
 
-.recommendation h2 {
+.recommendation h2,
+.recommendation h3 {
   margin-bottom: 12px;
   color: var(--violet);
   font-size: 2rem;
@@ -180,23 +304,10 @@ button:hover {
   line-height: 1.6;
 }
 
-.mood-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin: 22px 0 0;
-}
-
-.mood-stats div,
-.steps article,
 .credits {
   border: 1px solid rgba(17, 24, 39, 0.08);
   border-radius: 8px;
   background: rgba(255, 250, 240, 0.74);
-}
-
-.mood-stats div {
-  padding: 12px;
 }
 
 dt {
@@ -211,37 +322,14 @@ dd {
   font-weight: 800;
 }
 
-.workflow,
 .credits {
   margin-top: 38px;
 }
 
-.workflow h2,
 .credits h2 {
   font-size: 1.7rem;
 }
 
-.steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.steps article {
-  padding: 20px;
-}
-
-.steps span {
-  color: var(--coral);
-  font-size: 0.82rem;
-  font-weight: 900;
-}
-
-.steps h3 {
-  margin: 10px 0 8px;
-}
-
-.steps p,
 .credits p {
   color: var(--muted);
   line-height: 1.6;
@@ -262,8 +350,7 @@ dd {
   }
 
   .hero,
-  .recommendation,
-  .steps {
+  .recommendation {
     grid-template-columns: 1fr;
   }
 
@@ -279,11 +366,27 @@ dd {
   .poster {
     min-height: 190px;
   }
+
+  .mood-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weather-stats,
+  .mood-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .result-heading,
+  .favorites-header,
+  .favorite-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 520px) {
   .input-row,
-  .mood-stats {
+  .mood-grid {
     grid-template-columns: 1fr;
   }
 

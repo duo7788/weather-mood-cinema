@@ -2,12 +2,18 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const {
+  buildMovieDetailUrl,
   buildMovieSearchUrl,
+  buildWeatherMoodUrl,
+  createFavoritePayload,
   deriveAtmosphereTags,
   getAdjacentTemperatureTags,
+  getFavorites,
   getPosterUrl,
   pickTopCandidate,
+  removeFavorite,
   renderMovieRecommendation,
+  saveFavorite,
   scoreMovie,
 } = require("../script.js");
 
@@ -16,6 +22,17 @@ test("builds the Netlify Function URL with an encoded query", () => {
     buildMovieSearchUrl("rainy drama"),
     "/.netlify/functions/movie-search?query=rainy%20drama",
   );
+});
+
+test("builds the weather Function URL with an encoded city", () => {
+  assert.equal(
+    buildWeatherMoodUrl("New York"),
+    "/.netlify/functions/weather-mood?city=New%20York",
+  );
+});
+
+test("builds the TMDB detail proxy URL from an id", () => {
+  assert.equal(buildMovieDetailUrl(843), "/.netlify/functions/movie-search?id=843");
 });
 
 test("builds a TMDB poster URL when a poster path is present", () => {
@@ -112,4 +129,74 @@ test("picks from the highest scoring candidate pool", () => {
 
   const picked = pickTopCandidate(candidates, () => 0.99, 2);
   assert.equal(picked.movie.title, "B");
+});
+
+test("creates a favorite payload with weather, mood, and score context", () => {
+  assert.deepEqual(
+    createFavoritePayload(
+      {
+        id: 843,
+        title: "In the Mood for Love",
+        overview: "A quiet story.",
+        posterPath: "/poster.jpg",
+        releaseDate: "2000-09-29",
+        rating: 8.1,
+      },
+      {
+        city: "Beijing",
+        weather: "Clear sky",
+        weatherTag: "clear",
+        temperatureTag: "mild",
+      },
+      "nostalgic",
+      10,
+    ),
+    {
+      id: 843,
+      title: "In the Mood for Love",
+      overview: "A quiet story.",
+      posterPath: "/poster.jpg",
+      releaseDate: "2000-09-29",
+      rating: 8.1,
+      city: "Beijing",
+      weather: "Clear sky",
+      weatherTag: "clear",
+      temperatureTag: "mild",
+      mood: "nostalgic",
+      score: 10,
+    },
+  );
+});
+
+test("stores favorites without duplicates and removes them by id", () => {
+  const storage = {
+    value: null,
+    getItem(key) {
+      assert.equal(key, "weatherMoodCinemaFavorites");
+      return this.value;
+    },
+    setItem(key, value) {
+      assert.equal(key, "weatherMoodCinemaFavorites");
+      this.value = value;
+    },
+  };
+  const favorite = {
+    id: 843,
+    title: "In the Mood for Love",
+    overview: "A quiet story.",
+    posterPath: "/poster.jpg",
+    releaseDate: "2000-09-29",
+    rating: 8.1,
+    city: "Beijing",
+    weather: "Clear sky",
+    weatherTag: "clear",
+    temperatureTag: "mild",
+    mood: "nostalgic",
+    score: 10,
+  };
+
+  assert.deepEqual(getFavorites(storage), []);
+  assert.deepEqual(saveFavorite(storage, favorite), [favorite]);
+  assert.deepEqual(saveFavorite(storage, favorite), [favorite]);
+  assert.deepEqual(removeFavorite(storage, 843), []);
 });
