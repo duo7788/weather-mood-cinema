@@ -14,10 +14,11 @@
     <main class="page-shell">
       <section class="hero" aria-labelledby="page-title">
         <div class="hero-copy">
-          <p class="eyebrow">Weather-based movie discovery</p>
+          <p class="eyebrow">Weather atlas for cinema</p>
           <h1 id="page-title">Weather Mood Cinema</h1>
           <p class="lede">
-            Choose a city, pick the feeling you want tonight, and let the weather set the scene.
+            Trace a city through weather, mood, and film. Let the map choose the atmosphere before
+            the recommendation begins.
           </p>
           <form class="city-form" aria-label="City weather form">
             <label for="city">City</label>
@@ -32,27 +33,75 @@
           </button>
         </div>
 
-        <article class="weather-card" aria-label="Selected city weather">
-          <p class="city-line">Selected city</p>
-          <h2 id="weather-city">Shanghai</h2>
-          <p id="weather-description">
-            Search for a city to turn current weather into a movie mood.
-          </p>
-          <dl class="weather-stats">
-            <div>
-              <dt>Temperature</dt>
-              <dd id="temperature-value">--</dd>
-            </div>
-            <div>
-              <dt>Weather</dt>
-              <dd id="weather-value">Waiting</dd>
-            </div>
-            <div>
-              <dt>Tag</dt>
-              <dd id="weather-mood-value">Unset</dd>
-            </div>
-          </dl>
-        </article>
+        <div class="atlas-panel" aria-label="City map selector">
+          <div class="atlas-map">
+            <span class="contour contour-one"></span>
+            <span class="contour contour-two"></span>
+            <span class="contour contour-three"></span>
+            <span class="atlas-line line-one"></span>
+            <span class="atlas-line line-two"></span>
+            <span class="atlas-line line-three"></span>
+            <span class="atlas-grid"></span>
+            <button
+              type="button"
+              class="map-point is-selected"
+              data-city="Shanghai"
+              style="--x: 72%; --y: 56%;"
+              aria-pressed="true"
+            >
+              <span>Shanghai</span>
+            </button>
+            <button
+              type="button"
+              class="map-point"
+              data-city="Tokyo"
+              style="--x: 80%; --y: 46%;"
+              aria-pressed="false"
+            >
+              <span>Tokyo</span>
+            </button>
+            <button
+              type="button"
+              class="map-point"
+              data-city="Paris"
+              style="--x: 44%; --y: 42%;"
+              aria-pressed="false"
+            >
+              <span>Paris</span>
+            </button>
+            <button
+              type="button"
+              class="map-point"
+              data-city="New York"
+              style="--x: 25%; --y: 47%;"
+              aria-pressed="false"
+            >
+              <span>New York</span>
+            </button>
+          </div>
+
+          <article class="weather-card" aria-label="Selected city weather">
+            <p class="city-line">Selected city</p>
+            <h2 id="weather-city">Shanghai</h2>
+            <p id="weather-description">
+              Select a city from the atlas, then read its weather into a movie mood.
+            </p>
+            <dl class="weather-stats">
+              <div>
+                <dt>Temperature</dt>
+                <dd id="temperature-value">--</dd>
+              </div>
+              <div>
+                <dt>Weather</dt>
+                <dd id="weather-value">Waiting</dd>
+              </div>
+              <div>
+                <dt>Tag</dt>
+                <dd id="weather-mood-value">Unset</dd>
+              </div>
+            </dl>
+          </article>
+        </div>
       </section>
 
       <section class="mood-section" aria-labelledby="mood-title">

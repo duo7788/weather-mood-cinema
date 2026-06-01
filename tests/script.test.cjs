@@ -14,6 +14,7 @@ const {
   removeFavorite,
   renderMovieRecommendation,
   saveFavorite,
+  selectMapLocation,
   scoreMovie,
 } = require("../script.js");
 
@@ -199,4 +200,44 @@ test("stores favorites without duplicates and removes them by id", () => {
   assert.deepEqual(saveFavorite(storage, favorite), [favorite]);
   assert.deepEqual(saveFavorite(storage, favorite), [favorite]);
   assert.deepEqual(removeFavorite(storage, 843), []);
+});
+
+test("selects a map location into the city input and active state", () => {
+  const cityInput = { value: "" };
+  const buttons = [
+    {
+      dataset: { city: "Shanghai" },
+      classList: {
+        selected: false,
+        toggle(name, enabled) {
+          assert.equal(name, "is-selected");
+          this.selected = enabled;
+        },
+      },
+      setAttribute(name, value) {
+        this[name] = value;
+      },
+    },
+    {
+      dataset: { city: "Paris" },
+      classList: {
+        selected: false,
+        toggle(name, enabled) {
+          assert.equal(name, "is-selected");
+          this.selected = enabled;
+        },
+      },
+      setAttribute(name, value) {
+        this[name] = value;
+      },
+    },
+  ];
+
+  selectMapLocation(buttons, buttons[1], cityInput);
+
+  assert.equal(cityInput.value, "Paris");
+  assert.equal(buttons[0].classList.selected, false);
+  assert.equal(buttons[0]["aria-pressed"], "false");
+  assert.equal(buttons[1].classList.selected, true);
+  assert.equal(buttons[1]["aria-pressed"], "true");
 });

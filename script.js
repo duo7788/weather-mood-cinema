@@ -190,6 +190,16 @@ const setButtonLoading = (button, isLoading, idleText, loadingText) => {
   button.textContent = isLoading ? loadingText : idleText;
 };
 
+const selectMapLocation = (buttons, selectedButton, cityInput) => {
+  cityInput.value = selectedButton.dataset.city;
+
+  buttons.forEach((button) => {
+    const isSelected = button === selectedButton;
+    button.classList.toggle("is-selected", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  });
+};
+
 const escapeHtml = (value) =>
   String(value)
     .replace(/&/g, "&amp;")
@@ -216,6 +226,7 @@ const initWeatherMoodCinema = (
   const favoritesPanel = doc.querySelector("#favorites-panel");
   const closeFavoritesButton = doc.querySelector("#close-favorites-button");
   const favoritesList = doc.querySelector("#favorites-list");
+  const mapLocationButtons = Array.from(doc.querySelectorAll(".map-point"));
   const state = {
     currentMovie: null,
     currentScore: 0,
@@ -306,6 +317,13 @@ const initWeatherMoodCinema = (
         option.setAttribute("aria-pressed", String(option === button));
       });
       syncGenerateState();
+    });
+  });
+
+  mapLocationButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      selectMapLocation(mapLocationButtons, button, cityInput);
+      weatherError.textContent = "";
     });
   });
 
@@ -409,6 +427,7 @@ if (typeof module !== "undefined") {
     renderMovieRecommendation,
     renderWeather,
     saveFavorite,
+    selectMapLocation,
     scoreMovie,
   };
 }
