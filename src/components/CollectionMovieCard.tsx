@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { BookmarkCheck } from 'lucide-react';
 import { SavedMovie } from '../types';
+import { getPosterUrl } from '../api';
 
 interface Props {
   key?: React.Key;
@@ -26,11 +27,17 @@ export function CollectionMovieCard({ movie, onToggleSave }: Props) {
         >
            {/* Front - Poster */}
            <div className="absolute inset-0 backface-hidden bg-[#1a1a1a] rounded overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-             <img 
-               src={`https://image.pollinations.ai/prompt/${encodeURIComponent(movie.posterPrompt || movie.title + ' movie film aesthetic')}?width=400&height=600&nologo=true`} 
-               className="w-full h-full object-cover opacity-90 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-700" 
-               alt={movie.title} 
-             />
+             {movie.posterPath ? (
+               <img
+                 src={getPosterUrl(movie.posterPath)}
+                 className="w-full h-full object-cover opacity-90 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-700"
+                 alt={movie.title}
+               />
+             ) : (
+               <div className="h-full w-full flex items-center justify-center font-sans text-[10px] uppercase tracking-[0.3em] text-white/35">
+                 No Poster
+               </div>
+             )}
            </div>
            
            {/* Back - Info */}
@@ -40,11 +47,11 @@ export function CollectionMovieCard({ movie, onToggleSave }: Props) {
             >
               <div className="my-auto pb-4">
                 <p className="text-base md:text-lg leading-relaxed italic text-[#0A0B0D] mb-6">
-                  "{movie.description}"
+                  "{movie.overview || "A saved film from your weather mood archive."}"
                 </p>
                 <div className="h-[1px] w-12 bg-black/20 mx-auto my-6 shrink-0"></div>
-                <p className="text-xs tracking-widest leading-loose opacity-80 font-sans text-[#0A0B0D]">
-                   {movie.reason}
+                <p className="text-xs tracking-widest leading-loose opacity-80 font-sans text-[#0A0B0D] uppercase">
+                   {movie.weatherTag} / {movie.temperatureTag} / {movie.mood} / Score {movie.score}
                 </p>
               </div>
               <span className="shrink-0 text-center text-[9px] uppercase tracking-[0.2em] opacity-40 font-sans text-[#0A0B0D] mt-4">
@@ -56,15 +63,26 @@ export function CollectionMovieCard({ movie, onToggleSave }: Props) {
 
       <div>
         <h2 className="text-2xl leading-tight tracking-tight group-hover:text-white transition-colors">{movie.title}</h2>
-        <span className="text-xs opacity-60 font-light block mt-1">({movie.year}) - Dir. {movie.director}</span>
+        <span className="text-xs opacity-60 font-light block mt-1">
+          ({movie.releaseDate ? movie.releaseDate.slice(0, 4) : "Film"}) · {movie.rating ? movie.rating.toFixed(1) : "NR"}
+        </span>
       </div>
       
       <div className="h-[1px] w-full bg-white/20 my-1"></div>
       
       <div className="space-y-3 text-[10px] font-sans uppercase tracking-widest opacity-80">
-        <div className="flex items-center justify-between gap-4"><span className="opacity-60">Location</span> <span className="text-right truncate">{movie.savedLocation}</span></div>
-        <div className="flex items-center justify-between gap-4"><span className="opacity-60">Weather</span> <span className="text-right truncate">{movie.savedWeather}</span></div>
-        <div className="flex items-center justify-between gap-4"><span className="opacity-60">Mood</span> <span className="text-right truncate">{movie.savedMood}</span></div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="opacity-60">Location</span>
+          <span className="text-right truncate">{movie.city}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="opacity-60">Weather</span>
+          <span className="text-right truncate">{movie.weather}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="opacity-60">Mood</span>
+          <span className="text-right truncate">{movie.mood}</span>
+        </div>
       </div>
 
       <button 
