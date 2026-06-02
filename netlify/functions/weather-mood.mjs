@@ -99,17 +99,70 @@ const fetchJson = async (url) => {
   return response.json();
 };
 
+const buildForecastUrl = (latitude, longitude) => {
+  const forecastUrl = new URL(FORECAST_URL);
+  forecastUrl.searchParams.set("latitude", String(latitude));
+  forecastUrl.searchParams.set("longitude", String(longitude));
+  forecastUrl.searchParams.set("current", "temperature_2m,weather_code");
+  forecastUrl.searchParams.set("timezone", "auto");
+  return forecastUrl;
+};
+
+const createWeatherPayload = ({ city, country, latitude, longitude, forecastData }) => {
+  const temperature = Math.round(forecastData.current.temperature_2m);
+  const weatherCode = forecastData.current.weather_code;
+  const weather = getWeatherTag(weatherCode);
+
+  return {
+    city,
+    country,
+    latitude,
+    longitude,
+    temperature,
+    weather: weather.weather,
+    weatherCode,
+    weatherTag: weather.weatherTag,
+    temperatureTag: getTemperatureTag(temperature),
+    description: `${weather.weather} in ${city} gives the day a ${getWeatherDescription(weatherCode)}.`,
+  };
+};
+
 export default async (request) => {
   const requestUrl = new URL(request.url);
   const city = requestUrl.searchParams.get("city")?.trim();
+  const lat = requestUrl.searchParams.get("lat")?.trim();
+  const lng = requestUrl.searchParams.get("lng")?.trim();
 
-  if (!city) {
+  if (!city && !(lat && lng)) {
     return jsonResponse(400, {
-      error: "City is required",
+      error: "City or coordinates are required",
     });
   }
 
   try {
+    if (lat && lng) {
+      const latitude = Number(lat);
+      const longitude = Number(lng);
+
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return jsonResponse(400, {
+          error: "Valid coordinates are required",
+        });
+      }
+
+      const forecastData = await fetchJson(buildForecastUrl(latitude, longitude));
+
+      return jsonResponse(
+        200,
+        createWeatherPayload({
+          city: "Selected location",
+          latitude,
+          longitude,
+          forecastData,
+        }),
+      );
+    }
+
     const geocodingUrl = new URL(GEOCODING_URL);
     geocodingUrl.searchParams.set("name", city);
     geocodingUrl.searchParams.set("count", "1");
@@ -125,29 +178,18 @@ export default async (request) => {
       });
     }
 
-    const forecastUrl = new URL(FORECAST_URL);
-    forecastUrl.searchParams.set("latitude", String(location.latitude));
-    forecastUrl.searchParams.set("longitude", String(location.longitude));
-    forecastUrl.searchParams.set("current", "temperature_2m,weather_code");
-    forecastUrl.searchParams.set("timezone", "auto");
+    const forecastData = await fetchJson(buildForecastUrl(location.latitude, location.longitude));
 
-    const forecastData = await fetchJson(forecastUrl);
-    const temperature = Math.round(forecastData.current.temperature_2m);
-    const weatherCode = forecastData.current.weather_code;
-    const weather = getWeatherTag(weatherCode);
-
-    return jsonResponse(200, {
-      city: location.name,
-      country: location.country,
-      latitude: location.latitude,
-      longitude: location.longitude,
-      temperature,
-      weather: weather.weather,
-      weatherCode,
-      weatherTag: weather.weatherTag,
-      temperatureTag: getTemperatureTag(temperature),
-      description: `${weather.weather} in ${location.name} gives the day a ${getWeatherDescription(weatherCode)}.`,
-    });
+    return jsonResponse(
+      200,
+      createWeatherPayload({
+        city: location.name,
+        country: location.country,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        forecastData,
+      }),
+    );
   } catch (error) {
     return jsonResponse(502, {
       error: "Weather lookup failed",

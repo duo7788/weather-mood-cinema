@@ -95,14 +95,53 @@ test("returns normalized city weather with tags", async () => {
   });
 });
 
-test("returns 400 when city is missing", async () => {
+test("looks up weather by latitude and longitude", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    const requestUrl = new URL(String(url));
+
+    assert.equal(requestUrl.hostname, "api.open-meteo.com");
+    assert.equal(requestUrl.searchParams.get("latitude"), "31.23");
+    assert.equal(requestUrl.searchParams.get("longitude"), "121.47");
+
+    return new Response(
+      JSON.stringify({
+        current: {
+          temperature_2m: 20.4,
+          weather_code: 61,
+        },
+      }),
+      { status: 200 },
+    );
+  };
+
+  try {
+    const response = await handler(
+      new Request("https://example.com/.netlify/functions/weather-mood?lat=31.23&lng=121.47"),
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.city, "Selected location");
+    assert.equal(body.latitude, 31.23);
+    assert.equal(body.longitude, 121.47);
+    assert.equal(body.temperature, 20);
+    assert.equal(body.weather, "Rain");
+    assert.equal(body.weatherTag, "rainy");
+    assert.equal(body.temperatureTag, "mild");
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("requires either city or coordinates", async () => {
   const response = await handler(
     new Request("https://weather-mood-cinema.netlify.app/.netlify/functions/weather-mood"),
   );
 
   assert.equal(response.status, 400);
   assert.deepEqual(await readJson(response), {
-    error: "City is required",
+    error: "City or coordinates are required",
   });
 });
 
