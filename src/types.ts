@@ -36,11 +36,10 @@ export interface ScoredMovie {
   score: number;
 }
 
-export interface MovieRecommendation extends Partial<TmdbMovie> {
-  title: string;
-  score?: number;
-  mood?: MoodTag;
-  weather?: WeatherData;
+export interface MovieRecommendation extends TmdbMovie {
+  score: number;
+  mood: MoodTag;
+  weather: WeatherData;
   director?: string;
   year?: string;
   description?: string;
@@ -49,7 +48,7 @@ export interface MovieRecommendation extends Partial<TmdbMovie> {
 }
 
 export interface SavedMovie {
-  id: number | string;
+  id: number;
   title: string;
   overview?: string;
   posterPath?: string | null;
