@@ -1,4 +1,5 @@
 import { WeatherData, MovieRecommendation } from "./types";
+import type { TemperatureTag, WeatherTag } from "./movie-library";
 
 const WEATHER_CODES: Record<number, string> = {
   0: "Clear sky",
@@ -31,6 +32,24 @@ const WEATHER_CODES: Record<number, string> = {
   99: "Thunderstorm with heavy hail",
 };
 
+const getWeatherTag = (weatherCode: number): WeatherTag => {
+  if ([0, 1].includes(weatherCode)) return "clear";
+  if ([2, 3].includes(weatherCode)) return "cloudy";
+  if ([45, 48].includes(weatherCode)) return "foggy";
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(weatherCode)) return "rainy";
+  if ([71, 73, 75, 77, 85, 86].includes(weatherCode)) return "snowy";
+  if ([95, 96, 99].includes(weatherCode)) return "stormy";
+  return "cloudy";
+};
+
+const getTemperatureTag = (temperature: number): TemperatureTag => {
+  if (temperature <= 5) return "cold";
+  if (temperature <= 15) return "cool";
+  if (temperature <= 23) return "mild";
+  if (temperature <= 30) return "warm";
+  return "hot";
+};
+
 export async function getLocationName(lat: number, lng: number): Promise<string> {
   try {
     const res = await fetch(`https://api-bdc.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
@@ -47,9 +66,18 @@ export async function getWeather(lat: number, lng: number): Promise<WeatherData 
     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`);
     const data = await res.json();
     const current = data.current_weather;
+    const condition = WEATHER_CODES[current.weathercode as number] || "Unknown";
     return {
+      city: "Selected location",
+      latitude: lat,
+      longitude: lng,
       temperature: current.temperature,
-      condition: WEATHER_CODES[current.weathercode as number] || "Unknown",
+      weather: condition,
+      weatherCode: current.weathercode,
+      weatherTag: getWeatherTag(current.weathercode),
+      temperatureTag: getTemperatureTag(current.temperature),
+      description: `${condition} at the selected coordinate.`,
+      condition,
     };
   } catch (err) {
     console.error("Weather fetch failed", err);

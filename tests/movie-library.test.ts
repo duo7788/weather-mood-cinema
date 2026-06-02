@@ -8,9 +8,10 @@ import {
   TEMPERATURE_TAGS,
   WEATHER_TAGS,
 } from "../src/movie-library";
+import type { CuratedMovie } from "../src/movie-library";
 
 const assertKnownTags = (
-  movie: { title: string } & Record<string, string[]>,
+  movie: CuratedMovie,
   key: "weatherTags" | "temperatureTags" | "moodTags" | "atmosphereTags",
   knownTags: readonly string[],
 ) => {
