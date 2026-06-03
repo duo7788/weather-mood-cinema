@@ -1,5 +1,5 @@
-import { useRef, useState, type FormEvent } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useState, type FormEvent } from "react";
+import { motion } from "motion/react";
 import { Bookmark, BookmarkCheck, Loader2, Search } from "lucide-react";
 import { CollectionMovieCard } from "./components/CollectionMovieCard";
 import { MapComponent } from "./components/MapComponent";
@@ -31,7 +31,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"archive" | "collections">("archive");
   const [savedMovies, setSavedMovies] = useState<SavedMovie[]>(() => getFavorites());
-  const recsRef = useRef<HTMLDivElement>(null);
 
   const createSavedMovie = (movie: MovieRecommendation): SavedMovie => ({
     id: movie.id,
@@ -125,10 +124,6 @@ export default function App() {
         mood,
         weather,
       });
-
-      setTimeout(() => {
-        recsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
     } catch {
       setError("Movie data did not load.");
     } finally {
@@ -179,7 +174,11 @@ export default function App() {
         </button>
       </header>
 
-      <main className="flex-1 overflow-y-auto hidden-scrollbar relative z-10 w-full flex flex-col">
+      <main
+        className={`flex-1 hidden-scrollbar relative z-10 w-full flex flex-col ${
+          view === "archive" ? "overflow-hidden" : "overflow-y-auto"
+        }`}
+      >
         {view === "collections" ? (
           <section className="w-full flex-1 bg-[#111317] flex flex-col p-6 md:p-16 lg:px-32">
             <div className="flex justify-between items-baseline mb-16 shrink-0 pt-6">
@@ -205,7 +204,7 @@ export default function App() {
           </section>
         ) : (
           <>
-            <div className="min-h-[calc(100vh-4rem)] flex flex-col md:flex-row w-full shrink-0">
+            <div className="flex-1 min-h-0 flex flex-col md:flex-row w-full shrink-0">
               <section className="w-full md:w-[65%] lg:w-[70%] relative border-b md:border-b-0 md:border-r border-[#ffffff20] flex flex-col min-h-[50vh] md:min-h-0 shrink-0">
                 <div className="absolute inset-0 bg-[#16181D] overflow-hidden">
                   <MapComponent onLocationSelect={handleLocationSelect} selectedLocation={selectedLocation} />
@@ -263,19 +262,70 @@ export default function App() {
                     </div>
                   ) : null}
                 </div>
+
+                {recommendation ? (
+                  <motion.div
+                    key={recommendation.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                    className="pointer-events-auto absolute right-6 top-28 z-20 w-[min(20rem,calc(100%-3rem))] border border-white/15 bg-[#111317]/80 p-4 text-left rounded-sm backdrop-blur-md md:right-10 md:top-24"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 shrink-0">
+                        <div className="aspect-[2/3] w-full overflow-hidden rounded bg-white/5">
+                          {recommendation.posterPath ? (
+                            <img
+                              src={getPosterUrl(recommendation.posterPath)}
+                              className="h-full w-full object-cover opacity-85 mix-blend-luminosity"
+                              alt={recommendation.title}
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center font-sans text-[8px] uppercase tracking-[0.2em] text-white/35">
+                              No Poster
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-sans text-[9px] uppercase tracking-[0.2em] text-white/45">
+                          Score {recommendation.score}
+                        </div>
+                        <h2 className="mt-1 text-xl leading-tight tracking-tight text-white">
+                          {recommendation.title}
+                        </h2>
+                        <p className="mt-2 font-sans text-[10px] leading-relaxed uppercase tracking-[0.08em] text-white/60">
+                          {recommendation.weather.weatherTag} / {recommendation.weather.temperatureTag} /{" "}
+                          {recommendation.mood}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => toggleSave(recommendation)}
+                        className="shrink-0 text-white/60 hover:text-white transition-colors p-2 rounded-full border border-transparent hover:border-white/30 hover:bg-white/10"
+                        title={isRecommendationSaved ? "Remove from Collections" : "Save to Collections"}
+                      >
+                        {isRecommendationSaved ? (
+                          <BookmarkCheck className="w-4 h-4 text-white" />
+                        ) : (
+                          <Bookmark className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : null}
               </section>
 
-              <section className="w-full md:w-[35%] lg:w-[30%] flex flex-col p-6 md:p-12 bg-[#111317]">
-                <div className="flex-1 flex flex-col justify-center shrink-0 relative z-10">
+              <section className="w-full md:w-[35%] lg:w-[30%] flex flex-col p-6 md:p-10 xl:p-12 bg-[#111317]">
+                <div className="flex-1 flex flex-col justify-center shrink-0 relative z-10 min-h-0">
                   <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans block mb-8 text-white">
                     Select Mood
                   </span>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2.5 xl:gap-3">
                     {MOODS.map((item) => (
                       <button
                         key={item.value}
                         onClick={() => setMood(item.value)}
-                        className={`w-full py-3 px-6 rounded border text-[11px] font-sans uppercase tracking-[0.2em] transition-all duration-300 ${
+                        className={`w-full py-2.5 xl:py-3 px-6 rounded border text-[11px] font-sans uppercase tracking-[0.2em] transition-all duration-300 ${
                           mood === item.value
                             ? "border-white/80 bg-white text-black font-semibold"
                             : "border-white/20 text-[#F5F5F0] hover:bg-white/10 hover:border-white/40"
@@ -287,7 +337,7 @@ export default function App() {
                     ))}
                   </div>
 
-                  <div className="mt-12 pt-8 border-t border-white/20 flex flex-col items-center justify-center gap-4">
+                  <div className="mt-8 xl:mt-10 pt-6 border-t border-white/20 flex flex-col items-center justify-center gap-4">
                     <button
                       onClick={handleGetRecommendations}
                       disabled={!weather || !mood || isFetchingMovies}
@@ -311,89 +361,6 @@ export default function App() {
                 </div>
               </section>
             </div>
-
-            {recommendation ? (
-              <section
-                ref={recsRef}
-                className="w-full min-h-screen bg-[#111317] border-t border-white/20 flex flex-col p-6 md:p-16 lg:px-32"
-              >
-                <div className="flex justify-between items-baseline mb-16 shrink-0 pt-6">
-                  <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans">
-                    Curation Result
-                  </span>
-                  <span className="text-[10px] uppercase tracking-[0.1em] opacity-80 font-sans">
-                    Score {recommendation.score}
-                  </span>
-                </div>
-
-                <div className="flex-1 w-full mx-auto flex flex-col gap-16 pb-24 max-w-5xl">
-                  <AnimatePresence>
-                    <motion.div
-                      key={recommendation.id}
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      className="relative bg-[#16181D] border border-white/10 p-8 md:p-12 flex flex-col md:flex-row gap-8 shadow-2xl group overflow-hidden min-h-0 rounded-sm"
-                    >
-                      <div className="md:w-1/3 shrink-0 md:ml-6 z-10 relative">
-                        <div className="aspect-[2/3] w-full bg-[#1a1a1a] rounded overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] relative group-hover:scale-[1.02] transition-transform duration-700">
-                          {recommendation.posterPath ? (
-                            <img
-                              src={getPosterUrl(recommendation.posterPath)}
-                              className="w-full h-full object-cover opacity-85 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-700"
-                              alt={recommendation.title}
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center font-sans text-[10px] uppercase tracking-[0.3em] text-white/35">
-                              No Poster
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="md:w-2/3 flex flex-col justify-center md:mr-6 z-10">
-                        <div className="flex justify-between items-start mb-4 gap-4">
-                          <div>
-                            <span className="text-[10px] uppercase tracking-[0.2em] opacity-60 font-sans mb-2 block italic text-white/90">
-                              {recommendation.weather.city} / {recommendation.weather.weather} /{" "}
-                              {recommendation.mood}
-                            </span>
-                            <h2 className="text-4xl md:text-5xl leading-[1.1] tracking-tight group-hover:text-white transition-colors">
-                              {recommendation.title}
-                            </h2>
-                            <span className="text-xl opacity-60 font-light block mt-2">
-                              ({recommendation.releaseDate ? recommendation.releaseDate.slice(0, 4) : "Film"}) ·{" "}
-                              {recommendation.rating ? recommendation.rating.toFixed(1) : "NR"}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => toggleSave(recommendation)}
-                            className="text-white/60 hover:text-white transition-colors p-2 rounded-full border border-transparent hover:border-white/30 hover:bg-white/10"
-                            title={isRecommendationSaved ? "Remove from Collections" : "Save to Collections"}
-                          >
-                            {isRecommendationSaved ? (
-                              <BookmarkCheck className="w-5 h-5 text-white" />
-                            ) : (
-                              <Bookmark className="w-5 h-5" />
-                            )}
-                          </button>
-                        </div>
-
-                        <div className="h-[1px] w-full bg-white/20 my-6" />
-                        <p className="text-lg md:text-xl leading-relaxed opacity-90 mb-6 italic text-[#F5F5F0]">
-                          "{recommendation.overview || "A film selected for this weather mood."}"
-                        </p>
-                        <p className="text-sm tracking-widest leading-loose opacity-70 font-sans uppercase">
-                          Weather {recommendation.weather.weatherTag}. Temperature{" "}
-                          {recommendation.weather.temperatureTag}. Mood {recommendation.mood}. Match score{" "}
-                          {recommendation.score}.
-                        </p>
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-              </section>
-            ) : null}
           </>
         )}
 

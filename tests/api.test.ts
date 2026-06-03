@@ -5,6 +5,7 @@ import {
   buildMovieDetailUrl,
   buildWeatherByCityUrl,
   buildWeatherByCoordsUrl,
+  getMovieDetails,
   getWeatherByCity,
   getWeatherByCoords,
 } from "../src/api";
@@ -19,6 +20,27 @@ test("builds weather lookup URLs", () => {
 
 test("builds TMDB detail URL", () => {
   assert.equal(buildMovieDetailUrl(843), "/.netlify/functions/movie-search?id=843");
+});
+
+test("falls back to curated movie metadata when the local TMDB Function is unavailable", async () => {
+  const originalFetch = global.fetch;
+
+  global.fetch = async () => new Response("Not found", { status: 404 });
+
+  try {
+    const movie = await getMovieDetails(843);
+
+    assert.deepEqual(movie, {
+      id: 843,
+      title: "In the Mood for Love",
+      overview: "A curated TMDB title selected for this weather mood.",
+      posterPath: null,
+      releaseDate: "",
+      rating: null,
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
 
 test("falls back to direct reverse geocoding and weather lookup when coordinate Function is unavailable", async () => {

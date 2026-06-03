@@ -1,4 +1,5 @@
 import type { TmdbMovie, WeatherData } from "./types";
+import { MOVIE_LIBRARY } from "./movie-library";
 
 type WeatherTag = WeatherData["weatherTag"];
 type TemperatureTag = WeatherData["temperatureTag"];
@@ -209,9 +210,30 @@ export const getWeatherByCity = async (city: string) => {
   }
 };
 
+const getCuratedMovieDetails = (movieId: number): TmdbMovie => {
+  const movie = MOVIE_LIBRARY.find((item) => item.tmdbId === movieId);
+
+  if (!movie) {
+    throw new Error("Movie not found");
+  }
+
+  return {
+    id: movie.tmdbId,
+    title: movie.title,
+    overview: "A curated TMDB title selected for this weather mood.",
+    posterPath: null,
+    releaseDate: "",
+    rating: null,
+  };
+};
+
 export const getMovieDetails = async (movieId: number) => {
-  const data = await fetchJson<{ movie: TmdbMovie }>(buildMovieDetailUrl(movieId));
-  return data.movie;
+  try {
+    const data = await fetchJson<{ movie: TmdbMovie }>(buildMovieDetailUrl(movieId));
+    return data.movie;
+  } catch {
+    return getCuratedMovieDetails(movieId);
+  }
 };
 
 export const getPosterUrl = (posterPath: string | null, size = "w342") =>
