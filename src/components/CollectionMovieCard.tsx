@@ -10,38 +10,41 @@ interface Props {
   onToggleSave: (movie: SavedMovie) => void;
 }
 
+export const FLIP_HINT_TEXT = "Click poster to flip for details";
+
 export function CollectionMovieCard({ movie, onToggleSave }: Props) {
   const [isFlipped, setIsFlipped] = useState(false);
 
   return (
     <div className="group relative bg-[#13151A] border border-white/10 p-6 flex flex-col gap-6 shadow-xl text-[#F5F5F0]">
-      <div 
-        className="aspect-[2/3] w-full relative perspective-1000 cursor-pointer"
-        onClick={() => setIsFlipped(!isFlipped)}
-      >
-        <motion.div
-           className="w-full h-full relative preserve-3d"
-           initial={false}
-           animate={{ rotateY: isFlipped ? 180 : 0 }}
-           transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+      <div>
+        <div
+          className="aspect-[2/3] w-full relative perspective-1000 cursor-pointer"
+          onClick={() => setIsFlipped(!isFlipped)}
         >
-           {/* Front - Poster */}
-           <div className="absolute inset-0 backface-hidden bg-[#1a1a1a] rounded overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-             {movie.posterPath ? (
-               <img
-                 src={getPosterUrl(movie.posterPath)}
-                 className="w-full h-full object-cover opacity-90 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-700"
-                 alt={movie.title}
-               />
-             ) : (
-               <div className="h-full w-full flex items-center justify-center font-sans text-[10px] uppercase tracking-[0.3em] text-white/35">
-                 No Poster
-               </div>
-             )}
-           </div>
-           
-           {/* Back - Info */}
-           <div 
+          <motion.div
+            className="w-full h-full relative preserve-3d"
+            initial={false}
+            animate={{ rotateY: isFlipped ? 180 : 0 }}
+            transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+          >
+            {/* Front - Poster */}
+            <div className="absolute inset-0 backface-hidden bg-[#1a1a1a] rounded overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+              {movie.posterPath ? (
+                <img
+                  src={getPosterUrl(movie.posterPath)}
+                  className="w-full h-full object-cover opacity-90 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-700"
+                  alt={movie.title}
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center font-sans text-[10px] uppercase tracking-[0.3em] text-white/35">
+                  No Poster
+                </div>
+              )}
+            </div>
+
+            {/* Back - Info */}
+            <div
               className="absolute inset-0 backface-hidden bg-[#E5E1DA] rounded p-6 md:p-8 overflow-y-auto hidden-scrollbar text-center flex flex-col shadow-inner"
               style={{ transform: 'rotateY(180deg)' }}
             >
@@ -51,14 +54,18 @@ export function CollectionMovieCard({ movie, onToggleSave }: Props) {
                 </p>
                 <div className="h-[1px] w-12 bg-black/20 mx-auto my-6 shrink-0"></div>
                 <p className="text-xs tracking-widest leading-loose opacity-80 font-sans text-[#0A0B0D] uppercase">
-                   {movie.weatherTag} / {movie.temperatureTag} / {movie.mood} / Score {movie.score}
+                  {movie.weatherTag} / {movie.temperatureTag} / {movie.mood} / Score {movie.score}
                 </p>
               </div>
               <span className="shrink-0 text-center text-[9px] uppercase tracking-[0.2em] opacity-40 font-sans text-[#0A0B0D] mt-4">
-                 Tap to flip back
+                Tap to flip back
               </span>
-           </div>
-        </motion.div>
+            </div>
+          </motion.div>
+        </div>
+        <p className="mt-3 text-center font-sans text-[9px] uppercase tracking-[0.22em] text-white/35">
+          {FLIP_HINT_TEXT}
+        </p>
       </div>
 
       <div>
