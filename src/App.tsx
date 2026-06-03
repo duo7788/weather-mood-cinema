@@ -168,9 +168,15 @@ export default function App() {
             Collections
           </button>
         </div>
-        <div className="w-8 h-8 md:w-10 md:h-10 border border-[#ffffff30] rounded-full flex items-center justify-center text-[10px] md:text-[12px] opacity-80 font-sans tracking-widest">
+        <button
+          type="button"
+          onClick={() => setView("collections")}
+          className="w-8 h-8 md:w-10 md:h-10 border border-[#ffffff30] rounded-full flex items-center justify-center text-[10px] md:text-[12px] opacity-80 font-sans tracking-widest transition hover:opacity-100 hover:border-white/50"
+          aria-label="Open Collections"
+          title="Open Collections"
+        >
           {savedMovies.length}
-        </div>
+        </button>
       </header>
 
       <main className="flex-1 overflow-y-auto hidden-scrollbar relative z-10 w-full flex flex-col">
@@ -207,7 +213,7 @@ export default function App() {
 
                 <form
                   onSubmit={handleCitySearch}
-                  className="pointer-events-auto absolute left-6 top-6 z-20 flex w-[min(18rem,calc(100vw-3rem))] items-center gap-2 border border-white/15 bg-[#111317]/70 px-3 py-2 backdrop-blur-md md:left-10 md:top-10"
+                  className="pointer-events-auto absolute left-6 top-12 z-20 flex w-[min(18rem,calc(100vw-3rem))] items-center gap-2 border border-white/15 bg-[#111317]/70 px-3 py-2 backdrop-blur-md md:left-10 md:top-12"
                   aria-label="Jump to city"
                 >
                   <Search className="h-3.5 w-3.5 text-white/50" />
