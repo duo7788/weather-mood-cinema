@@ -151,7 +151,10 @@ export default function App() {
         </div>
         <div className="flex gap-8 text-[10px] tracking-[0.2em] uppercase font-sans">
           <button
-            onClick={() => setView("archive")}
+            onClick={() => {
+              setView("archive");
+              setRecommendation(null);
+            }}
             className={`transition-opacity ${view === "archive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
           >
             Archive
@@ -203,165 +206,200 @@ export default function App() {
             )}
           </section>
         ) : (
-          <>
-            <div className="flex-1 min-h-0 flex flex-col md:flex-row w-full shrink-0">
-              <section className="w-full md:w-[65%] lg:w-[70%] relative border-b md:border-b-0 md:border-r border-[#ffffff20] flex flex-col min-h-[50vh] md:min-h-0 shrink-0">
-                <div className="absolute inset-0 bg-[#16181D] overflow-hidden">
-                  <MapComponent onLocationSelect={handleLocationSelect} selectedLocation={selectedLocation} />
-                </div>
+          <section className="flex-1 min-h-0 overflow-hidden relative">
+            <motion.div
+              className="absolute inset-0 flex flex-col md:flex-row w-full shrink-0"
+              animate={{ y: recommendation ? "-100%" : "0%" }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            >
+                <section className="w-full md:w-[65%] lg:w-[70%] relative border-b md:border-b-0 md:border-r border-[#ffffff20] flex flex-col min-h-[50vh] md:min-h-0 shrink-0">
+                  <div className="absolute inset-0 bg-[#16181D] overflow-hidden">
+                    <MapComponent onLocationSelect={handleLocationSelect} selectedLocation={selectedLocation} />
+                  </div>
 
-                <form
-                  onSubmit={handleCitySearch}
-                  className="pointer-events-auto absolute left-6 top-12 z-20 flex w-[min(18rem,calc(100vw-3rem))] items-center gap-2 border border-white/15 bg-[#111317]/70 px-3 py-2 backdrop-blur-md md:left-10 md:top-12"
-                  aria-label="Jump to city"
-                >
-                  <Search className="h-3.5 w-3.5 text-white/50" />
-                  <input
-                    value={cityQuery}
-                    onChange={(event) => setCityQuery(event.target.value)}
-                    className="min-w-0 flex-1 bg-transparent font-sans text-[10px] uppercase tracking-[0.18em] text-white/80 outline-none placeholder:text-white/35"
-                    placeholder="Search city"
-                    aria-label="Search city"
-                  />
-                  <button
-                    type="submit"
-                    className="font-sans text-[9px] uppercase tracking-[0.2em] text-white/50 transition hover:text-white disabled:opacity-30"
-                    disabled={isFetchingWeather}
+                  <form
+                    onSubmit={handleCitySearch}
+                    className="pointer-events-auto absolute left-6 top-12 z-20 flex w-[min(18rem,calc(100vw-3rem))] items-center gap-2 border border-white/15 bg-[#111317]/70 px-3 py-2 backdrop-blur-md md:left-10 md:top-12"
+                    aria-label="Jump to city"
                   >
-                    Go
-                  </button>
-                </form>
+                    <Search className="h-3.5 w-3.5 text-white/50" />
+                    <input
+                      value={cityQuery}
+                      onChange={(event) => setCityQuery(event.target.value)}
+                      className="min-w-0 flex-1 bg-transparent font-sans text-[10px] uppercase tracking-[0.18em] text-white/80 outline-none placeholder:text-white/35"
+                      placeholder="Search city"
+                      aria-label="Search city"
+                    />
+                    <button
+                      type="submit"
+                      className="font-sans text-[9px] uppercase tracking-[0.2em] text-white/50 transition hover:text-white disabled:opacity-30"
+                      disabled={isFetchingWeather}
+                    >
+                      Go
+                    </button>
+                  </form>
 
-                <div className="mt-auto p-6 md:p-12 z-10 bg-gradient-to-t from-[#111317] via-[#111317]/80 to-transparent pointer-events-none">
-                  {weather ? (
-                    <>
-                      <h1 className="text-6xl md:text-[112px] leading-[0.85] tracking-tighter italic font-light lowercase drop-shadow-lg text-white">
-                        {weather.city}
-                        <span className="block not-italic text-3xl md:text-[72px] tracking-normal font-normal opacity-60 mt-1 md:mt-2">
-                          {weather.weather}
-                        </span>
+                  <div className="mt-auto p-6 md:p-12 z-10 bg-gradient-to-t from-[#111317] via-[#111317]/80 to-transparent pointer-events-none">
+                    {weather ? (
+                      <>
+                        <h1 className="text-6xl md:text-[112px] leading-[0.85] tracking-tighter italic font-light lowercase drop-shadow-lg text-white">
+                          {weather.city}
+                          <span className="block not-italic text-3xl md:text-[72px] tracking-normal font-normal opacity-60 mt-1 md:mt-2">
+                            {weather.weather}
+                          </span>
+                        </h1>
+                        <div className="mt-6 md:mt-8 flex flex-col md:flex-row md:items-baseline gap-2 md:gap-6">
+                          <span className="text-4xl md:text-5xl font-light text-white">
+                            {weather.temperature}°C
+                          </span>
+                          <span className="text-[10px] md:text-xs uppercase tracking-[0.2em] opacity-70 font-sans">
+                            {weather.weatherTag} / {weather.temperatureTag}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <h1 className="text-5xl md:text-[80px] leading-[0.85] tracking-tighter italic font-light lowercase opacity-60">
+                        Select a<br />
+                        <span className="not-italic opacity-70">coordinate</span>
                       </h1>
-                      <div className="mt-6 md:mt-8 flex flex-col md:flex-row md:items-baseline gap-2 md:gap-6">
-                        <span className="text-4xl md:text-5xl font-light text-white">
-                          {weather.temperature}°C
-                        </span>
-                        <span className="text-[10px] md:text-xs uppercase tracking-[0.2em] opacity-70 font-sans">
-                          {weather.weatherTag} / {weather.temperatureTag}
-                        </span>
+                    )}
+                    {isFetchingWeather ? (
+                      <div className="mt-6 md:mt-8 text-[10px] md:text-xs uppercase tracking-[0.2em] opacity-70 font-sans flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Scanning atmosphere...
                       </div>
-                    </>
-                  ) : (
-                    <h1 className="text-5xl md:text-[80px] leading-[0.85] tracking-tighter italic font-light lowercase opacity-60">
-                      Select a<br />
-                      <span className="not-italic opacity-70">coordinate</span>
-                    </h1>
-                  )}
-                  {isFetchingWeather ? (
-                    <div className="mt-6 md:mt-8 text-[10px] md:text-xs uppercase tracking-[0.2em] opacity-70 font-sans flex items-center gap-2">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Scanning atmosphere...
-                    </div>
-                  ) : null}
-                </div>
+                    ) : null}
+                  </div>
+                </section>
 
+                <section className="w-full md:w-[35%] lg:w-[30%] flex flex-col p-6 md:p-10 xl:p-12 bg-[#111317]">
+                  <div className="flex-1 flex flex-col justify-center shrink-0 relative z-10 min-h-0">
+                    <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans block mb-8 text-white">
+                      Select Mood
+                    </span>
+                    <div className="flex flex-col gap-2.5 xl:gap-3">
+                      {MOODS.map((item) => (
+                        <button
+                          key={item.value}
+                          onClick={() => setMood(item.value)}
+                          className={`w-full py-2.5 xl:py-3 px-6 rounded border text-[11px] font-sans uppercase tracking-[0.2em] transition-all duration-300 ${
+                            mood === item.value
+                              ? "border-white/80 bg-white text-black font-semibold"
+                              : "border-white/20 text-[#F5F5F0] hover:bg-white/10 hover:border-white/40"
+                          }`}
+                          aria-pressed={mood === item.value}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="mt-8 xl:mt-10 pt-6 border-t border-white/20 flex flex-col items-center justify-center gap-4">
+                      <button
+                        onClick={handleGetRecommendations}
+                        disabled={!weather || !mood || isFetchingMovies}
+                        className="w-full sm:w-auto px-8 py-4 border border-white/40 text-[#F5F5F0] font-sans text-[11px] hover:bg-white hover:text-black transition-all duration-300 uppercase tracking-[0.2em] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#F5F5F0] flex items-center justify-center space-x-3 rounded"
+                      >
+                        {isFetchingMovies ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Curating...</span>
+                          </>
+                        ) : (
+                          <span>Unveil Recommendation</span>
+                        )}
+                      </button>
+                      {error ? (
+                        <div className="text-red-400 font-sans text-[10px] uppercase tracking-wider text-center mt-4">
+                          {error}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </section>
+            </motion.div>
+
+              <motion.section
+                className="absolute inset-0 bg-[#111317] border-t border-white/20 flex flex-col p-6 md:p-12 lg:px-24"
+                animate={{ y: recommendation ? "0%" : "100%" }}
+                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              >
                 {recommendation ? (
-                  <motion.div
-                    key={recommendation.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45, ease: "easeOut" }}
-                    className="pointer-events-auto absolute right-6 top-28 z-20 w-[min(20rem,calc(100%-3rem))] border border-white/15 bg-[#111317]/80 p-4 text-left rounded-sm backdrop-blur-md md:right-10 md:top-24"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 shrink-0">
-                        <div className="aspect-[2/3] w-full overflow-hidden rounded bg-white/5">
+                  <>
+                    <div className="flex justify-between items-baseline mb-8 shrink-0">
+                      <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans">
+                        Curation Result
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.1em] opacity-80 font-sans">
+                        Score {recommendation.score}
+                      </span>
+                    </div>
+
+                    <motion.div
+                      key={recommendation.id}
+                      initial={{ opacity: 0, y: 28 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                      className="flex-1 min-h-0 w-full mx-auto grid grid-cols-1 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-6 md:gap-8 max-w-6xl items-center"
+                    >
+                      <div className="min-h-0 flex items-center justify-center">
+                        <div className="h-[min(34vh,18rem)] md:h-[min(62vh,28rem)] aspect-[2/3] bg-[#1a1a1a] rounded-sm overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] relative">
                           {recommendation.posterPath ? (
                             <img
                               src={getPosterUrl(recommendation.posterPath)}
-                              className="h-full w-full object-cover opacity-85 mix-blend-luminosity"
+                              className="w-full h-full object-cover opacity-85 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700"
                               alt={recommendation.title}
                             />
                           ) : (
-                            <div className="flex h-full items-center justify-center font-sans text-[8px] uppercase tracking-[0.2em] text-white/35">
+                            <div className="h-full w-full flex items-center justify-center font-sans text-[10px] uppercase tracking-[0.3em] text-white/35">
                               No Poster
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-sans text-[9px] uppercase tracking-[0.2em] text-white/45">
-                          Score {recommendation.score}
+
+                      <div className="min-w-0">
+                        <div className="flex justify-between items-start gap-4 mb-6">
+                          <div className="min-w-0">
+                            <span className="text-[10px] uppercase tracking-[0.2em] opacity-60 font-sans mb-3 block italic text-white/90">
+                              {recommendation.weather.city} / {recommendation.weather.weather} /{" "}
+                              {recommendation.mood}
+                            </span>
+                            <h2 className="text-4xl md:text-6xl leading-[1.05] tracking-tight text-white">
+                              {recommendation.title}
+                            </h2>
+                            <span className="text-lg opacity-60 font-light block mt-3">
+                              ({recommendation.releaseDate ? recommendation.releaseDate.slice(0, 4) : "Film"}) ·{" "}
+                              {recommendation.rating ? recommendation.rating.toFixed(1) : "NR"}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => toggleSave(recommendation)}
+                            className="text-white/60 hover:text-white transition-colors p-2 rounded-full border border-transparent hover:border-white/30 hover:bg-white/10"
+                            title={isRecommendationSaved ? "Remove from Collections" : "Save to Collections"}
+                          >
+                            {isRecommendationSaved ? (
+                              <BookmarkCheck className="w-5 h-5 text-white" />
+                            ) : (
+                              <Bookmark className="w-5 h-5" />
+                            )}
+                          </button>
                         </div>
-                        <h2 className="mt-1 text-xl leading-tight tracking-tight text-white">
-                          {recommendation.title}
-                        </h2>
-                        <p className="mt-2 font-sans text-[10px] leading-relaxed uppercase tracking-[0.08em] text-white/60">
-                          {recommendation.weather.weatherTag} / {recommendation.weather.temperatureTag} /{" "}
-                          {recommendation.mood}
+
+                        <div className="h-[1px] w-full bg-white/20 my-6" />
+                        <p className="text-base md:text-xl leading-relaxed opacity-90 mb-6 italic text-[#F5F5F0] line-clamp-5">
+                          "{recommendation.overview || "A film selected for this weather mood."}"
+                        </p>
+                        <p className="text-xs md:text-sm tracking-widest leading-loose opacity-70 font-sans uppercase">
+                          Weather {recommendation.weather.weatherTag}. Temperature{" "}
+                          {recommendation.weather.temperatureTag}. Mood {recommendation.mood}. Match score{" "}
+                          {recommendation.score}.
                         </p>
                       </div>
-                      <button
-                        onClick={() => toggleSave(recommendation)}
-                        className="shrink-0 text-white/60 hover:text-white transition-colors p-2 rounded-full border border-transparent hover:border-white/30 hover:bg-white/10"
-                        title={isRecommendationSaved ? "Remove from Collections" : "Save to Collections"}
-                      >
-                        {isRecommendationSaved ? (
-                          <BookmarkCheck className="w-4 h-4 text-white" />
-                        ) : (
-                          <Bookmark className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </motion.div>
+                    </motion.div>
+                  </>
                 ) : null}
-              </section>
-
-              <section className="w-full md:w-[35%] lg:w-[30%] flex flex-col p-6 md:p-10 xl:p-12 bg-[#111317]">
-                <div className="flex-1 flex flex-col justify-center shrink-0 relative z-10 min-h-0">
-                  <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans block mb-8 text-white">
-                    Select Mood
-                  </span>
-                  <div className="flex flex-col gap-2.5 xl:gap-3">
-                    {MOODS.map((item) => (
-                      <button
-                        key={item.value}
-                        onClick={() => setMood(item.value)}
-                        className={`w-full py-2.5 xl:py-3 px-6 rounded border text-[11px] font-sans uppercase tracking-[0.2em] transition-all duration-300 ${
-                          mood === item.value
-                            ? "border-white/80 bg-white text-black font-semibold"
-                            : "border-white/20 text-[#F5F5F0] hover:bg-white/10 hover:border-white/40"
-                        }`}
-                        aria-pressed={mood === item.value}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="mt-8 xl:mt-10 pt-6 border-t border-white/20 flex flex-col items-center justify-center gap-4">
-                    <button
-                      onClick={handleGetRecommendations}
-                      disabled={!weather || !mood || isFetchingMovies}
-                      className="w-full sm:w-auto px-8 py-4 border border-white/40 text-[#F5F5F0] font-sans text-[11px] hover:bg-white hover:text-black transition-all duration-300 uppercase tracking-[0.2em] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#F5F5F0] flex items-center justify-center space-x-3 rounded"
-                    >
-                      {isFetchingMovies ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Curating...</span>
-                        </>
-                      ) : (
-                        <span>Unveil Recommendation</span>
-                      )}
-                    </button>
-                    {error ? (
-                      <div className="text-red-400 font-sans text-[10px] uppercase tracking-wider text-center mt-4">
-                        {error}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </section>
-            </div>
-          </>
+              </motion.section>
+          </section>
         )}
 
         <footer className="h-16 px-6 md:px-10 border-t border-[#ffffff20] flex items-center justify-between text-[9px] tracking-[0.2em] uppercase opacity-60 font-sans shrink-0 bg-[#111317] relative z-20">
