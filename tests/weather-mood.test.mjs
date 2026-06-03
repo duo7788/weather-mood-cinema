@@ -97,8 +97,27 @@ test("returns normalized city weather with tags", async () => {
 
 test("looks up weather by latitude and longitude", async () => {
   const originalFetch = global.fetch;
+  const requestedUrls = [];
+
   global.fetch = async (url) => {
     const requestUrl = new URL(String(url));
+    requestedUrls.push(requestUrl);
+
+    if (requestUrl.hostname === "nominatim.openstreetmap.org") {
+      assert.equal(requestUrl.searchParams.get("lat"), "31.23");
+      assert.equal(requestUrl.searchParams.get("lon"), "121.47");
+
+      return new Response(
+        JSON.stringify({
+          display_name: "Shanghai, China",
+          address: {
+            city: "Shanghai",
+            country: "China",
+          },
+        }),
+        { status: 200 },
+      );
+    }
 
     assert.equal(requestUrl.hostname, "api.open-meteo.com");
     assert.equal(requestUrl.searchParams.get("latitude"), "31.23");
@@ -122,7 +141,12 @@ test("looks up weather by latitude and longitude", async () => {
     const body = await response.json();
 
     assert.equal(response.status, 200);
-    assert.equal(body.city, "Selected location");
+    assert.deepEqual(
+      requestedUrls.map((url) => url.hostname),
+      ["nominatim.openstreetmap.org", "api.open-meteo.com"],
+    );
+    assert.equal(body.city, "Shanghai");
+    assert.equal(body.country, "China");
     assert.equal(body.latitude, 31.23);
     assert.equal(body.longitude, 121.47);
     assert.equal(body.temperature, 20);

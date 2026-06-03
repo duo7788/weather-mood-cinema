@@ -1,5 +1,6 @@
 const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+const REVERSE_GEOCODING_URL = "https://nominatim.openstreetmap.org/reverse";
 
 const jsonResponse = (status, body) =>
   new Response(JSON.stringify(body), {
@@ -89,8 +90,8 @@ const getWeatherDescription = (weatherCode) => {
   return group?.description || "changing, atmospheric texture";
 };
 
-const fetchJson = async (url) => {
-  const response = await fetch(url);
+const fetchJson = async (url, init) => {
+  const response = await fetch(url, init);
 
   if (!response.ok) {
     throw new Error("Open-Meteo request failed");
@@ -106,6 +107,60 @@ const buildForecastUrl = (latitude, longitude) => {
   forecastUrl.searchParams.set("current", "temperature_2m,weather_code");
   forecastUrl.searchParams.set("timezone", "auto");
   return forecastUrl;
+};
+
+const buildReverseGeocodingUrl = (latitude, longitude) => {
+  const reverseUrl = new URL(REVERSE_GEOCODING_URL);
+  reverseUrl.searchParams.set("format", "jsonv2");
+  reverseUrl.searchParams.set("lat", String(latitude));
+  reverseUrl.searchParams.set("lon", String(longitude));
+  reverseUrl.searchParams.set("zoom", "10");
+  reverseUrl.searchParams.set("addressdetails", "1");
+  reverseUrl.searchParams.set("accept-language", "en");
+  return reverseUrl;
+};
+
+const formatCoordinateName = (latitude, longitude) => {
+  const lat = `${Math.abs(latitude).toFixed(2)}°${latitude >= 0 ? "N" : "S"}`;
+  const lng = `${Math.abs(longitude).toFixed(2)}°${longitude >= 0 ? "E" : "W"}`;
+  return `${lat}, ${lng}`;
+};
+
+const getReadablePlace = (place, latitude, longitude) => {
+  const address = place.address;
+  const city =
+    address?.city ||
+    address?.town ||
+    address?.village ||
+    address?.municipality ||
+    address?.county ||
+    address?.state ||
+    address?.country ||
+    place.display_name?.split(",")[0]?.trim() ||
+    formatCoordinateName(latitude, longitude);
+
+  return {
+    city,
+    country: address?.country,
+  };
+};
+
+const lookupPlaceByCoordinates = async (latitude, longitude) => {
+  try {
+    const place = await fetchJson(buildReverseGeocodingUrl(latitude, longitude), {
+      headers: {
+        "User-Agent": "WeatherMoodCinema/1.0 (https://weather-mood-cinema.netlify.app)",
+        Referer: "https://weather-mood-cinema.netlify.app",
+      },
+    });
+
+    return getReadablePlace(place, latitude, longitude);
+  } catch {
+    return {
+      city: formatCoordinateName(latitude, longitude),
+      country: undefined,
+    };
+  }
 };
 
 const createWeatherPayload = ({ city, country, latitude, longitude, forecastData }) => {
@@ -150,12 +205,16 @@ export default async (request) => {
         });
       }
 
-      const forecastData = await fetchJson(buildForecastUrl(latitude, longitude));
+      const [place, forecastData] = await Promise.all([
+        lookupPlaceByCoordinates(latitude, longitude),
+        fetchJson(buildForecastUrl(latitude, longitude)),
+      ]);
 
       return jsonResponse(
         200,
         createWeatherPayload({
-          city: "Selected location",
+          city: place.city,
+          country: place.country,
           latitude,
           longitude,
           forecastData,

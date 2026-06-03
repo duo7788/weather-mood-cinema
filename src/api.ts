@@ -2,6 +2,18 @@ import type { TmdbMovie, WeatherData } from "./types";
 
 type WeatherTag = WeatherData["weatherTag"];
 type TemperatureTag = WeatherData["temperatureTag"];
+type ReverseGeocodingResult = {
+  display_name?: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    county?: string;
+    state?: string;
+    country?: string;
+  };
+};
 
 export const buildWeatherByCityUrl = (city: string) =>
   `/.netlify/functions/weather-mood?city=${encodeURIComponent(city)}`;
@@ -64,6 +76,54 @@ const buildOpenMeteoGeocodingUrl = (city: string) => {
   return geocodingUrl.toString();
 };
 
+const buildReverseGeocodingUrl = (lat: number, lng: number) => {
+  const reverseUrl = new URL("https://nominatim.openstreetmap.org/reverse");
+  reverseUrl.searchParams.set("format", "jsonv2");
+  reverseUrl.searchParams.set("lat", String(lat));
+  reverseUrl.searchParams.set("lon", String(lng));
+  reverseUrl.searchParams.set("zoom", "10");
+  reverseUrl.searchParams.set("addressdetails", "1");
+  reverseUrl.searchParams.set("accept-language", "en");
+  return reverseUrl.toString();
+};
+
+const formatCoordinateName = (lat: number, lng: number) => {
+  const latitude = `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"}`;
+  const longitude = `${Math.abs(lng).toFixed(2)}°${lng >= 0 ? "E" : "W"}`;
+  return `${latitude}, ${longitude}`;
+};
+
+const getReadablePlace = (place: ReverseGeocodingResult, lat: number, lng: number) => {
+  const address = place.address;
+  const city =
+    address?.city ||
+    address?.town ||
+    address?.village ||
+    address?.municipality ||
+    address?.county ||
+    address?.state ||
+    address?.country ||
+    place.display_name?.split(",")[0]?.trim() ||
+    formatCoordinateName(lat, lng);
+
+  return {
+    city,
+    country: address?.country,
+  };
+};
+
+const getPlaceByCoords = async (lat: number, lng: number) => {
+  try {
+    const place = await fetchJson<ReverseGeocodingResult>(buildReverseGeocodingUrl(lat, lng));
+    return getReadablePlace(place, lat, lng);
+  } catch {
+    return {
+      city: formatCoordinateName(lat, lng),
+      country: undefined,
+    };
+  }
+};
+
 const createWeatherData = ({
   city,
   country,
@@ -99,16 +159,19 @@ const createWeatherData = ({
 const getDirectWeatherByCoords = async (
   lat: number,
   lng: number,
-  city = "Selected location",
+  city?: string,
   country?: string,
 ) => {
-  const forecast = await fetchJson<{ current: { temperature_2m: number; weather_code: number } }>(
-    buildOpenMeteoForecastUrl(lat, lng),
-  );
+  const [place, forecast] = await Promise.all([
+    city ? Promise.resolve({ city, country }) : getPlaceByCoords(lat, lng),
+    fetchJson<{ current: { temperature_2m: number; weather_code: number } }>(
+      buildOpenMeteoForecastUrl(lat, lng),
+    ),
+  ]);
 
   return createWeatherData({
-    city,
-    country,
+    city: place.city,
+    country: place.country,
     latitude: lat,
     longitude: lng,
     temperature: forecast.current.temperature_2m,

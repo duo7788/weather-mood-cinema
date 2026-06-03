@@ -21,7 +21,7 @@ test("builds TMDB detail URL", () => {
   assert.equal(buildMovieDetailUrl(843), "/.netlify/functions/movie-search?id=843");
 });
 
-test("falls back to direct Open-Meteo lookup when coordinate Function is unavailable", async () => {
+test("falls back to direct reverse geocoding and weather lookup when coordinate Function is unavailable", async () => {
   const originalFetch = global.fetch;
   const requestedUrls: string[] = [];
 
@@ -34,6 +34,19 @@ test("falls back to direct Open-Meteo lookup when coordinate Function is unavail
         status: 200,
         headers: { "Content-Type": "text/html" },
       });
+    }
+
+    if (url.startsWith("https://nominatim.openstreetmap.org/reverse")) {
+      return new Response(
+        JSON.stringify({
+          display_name: "Shanghai, China",
+          address: {
+            city: "Shanghai",
+            country: "China",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
     }
 
     assert.ok(url.startsWith("https://api.open-meteo.com/v1/forecast"));
@@ -53,9 +66,11 @@ test("falls back to direct Open-Meteo lookup when coordinate Function is unavail
 
     assert.deepEqual(requestedUrls, [
       "/.netlify/functions/weather-mood?lat=31.23&lng=121.47",
+      "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=31.23&lon=121.47&zoom=10&addressdetails=1&accept-language=en",
       "https://api.open-meteo.com/v1/forecast?latitude=31.23&longitude=121.47&current=temperature_2m%2Cweather_code&timezone=auto",
     ]);
-    assert.equal(weather.city, "Selected location");
+    assert.equal(weather.city, "Shanghai");
+    assert.equal(weather.country, "China");
     assert.equal(weather.latitude, 31.23);
     assert.equal(weather.longitude, 121.47);
     assert.equal(weather.temperature, 20);
