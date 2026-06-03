@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/.netlify/functions/weather-mood",
+      "destination": "/api/weather-mood"
+    },
+    {
+      "source": "/.netlify/functions/movie-search",
+      "destination": "/api/movie-search"
+    }
+  ]
+}
