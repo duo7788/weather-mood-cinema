@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type TouchEvent, type WheelEvent } from "react";
 import { motion } from "motion/react";
 import { Bookmark, BookmarkCheck, Loader2, Search } from "lucide-react";
 import { CollectionMovieCard } from "./components/CollectionMovieCard";
@@ -6,6 +6,7 @@ import { MapComponent } from "./components/MapComponent";
 import { getMovieDetails, getPosterUrl, getWeatherByCity, getWeatherByCoords } from "./api";
 import { MOVIE_LIBRARY, type MoodTag } from "./movie-library";
 import { createScoredCandidates, pickTopCandidate } from "./recommendation";
+import { formatRecommendationSummary } from "./recommendation-summary";
 import { getFavorites, removeFavorite, saveFavorite } from "./storage";
 import type { MovieRecommendation, SavedMovie, WeatherData } from "./types";
 
@@ -21,6 +22,8 @@ const MOODS: { label: string; value: MoodTag }[] = [
   { label: "Tense", value: "tense" },
 ];
 
+const PAGE_GESTURE_THRESHOLD = 48;
+
 export default function App() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [mood, setMood] = useState<MoodTag | "">("");
@@ -31,6 +34,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"archive" | "collections">("archive");
   const [savedMovies, setSavedMovies] = useState<SavedMovie[]>(() => getFavorites());
+  const archiveViewportRef = useRef<HTMLElement | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const createSavedMovie = (movie: MovieRecommendation): SavedMovie => ({
     id: movie.id,
@@ -141,6 +146,82 @@ export default function App() {
     ? savedMovies.some((saved) => saved.id === recommendation.id)
     : false;
 
+  useEffect(() => {
+    const viewport = archiveViewportRef.current;
+
+    if (view !== "archive" || !recommendation || !viewport) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      viewport.scrollTo({
+        top: viewport.clientHeight,
+        behavior: "smooth",
+      });
+    });
+  }, [recommendation, view]);
+
+  const scrollArchiveTo = (page: "map" | "result") => {
+    const viewport = archiveViewportRef.current;
+
+    if (!viewport) {
+      return;
+    }
+
+    viewport.scrollTo({
+      top: page === "result" ? viewport.clientHeight : 0,
+      behavior: "smooth",
+    });
+  };
+
+  const handleArchiveWheel = (event: WheelEvent<HTMLElement>) => {
+    if (Math.abs(event.deltaY) < PAGE_GESTURE_THRESHOLD) {
+      return;
+    }
+
+    if (event.deltaY > 0 && recommendation) {
+      event.preventDefault();
+      scrollArchiveTo("result");
+    }
+
+    if (event.deltaY < 0) {
+      event.preventDefault();
+      scrollArchiveTo("map");
+    }
+  };
+
+  const handleArchiveTouchStart = (event: TouchEvent<HTMLElement>) => {
+    touchStartY.current = event.touches[0]?.clientY ?? null;
+  };
+
+  const handleArchiveTouchEnd = (event: TouchEvent<HTMLElement>) => {
+    if (touchStartY.current === null) {
+      return;
+    }
+
+    const endY = event.changedTouches[0]?.clientY;
+
+    if (typeof endY !== "number") {
+      touchStartY.current = null;
+      return;
+    }
+
+    const deltaY = endY - touchStartY.current;
+    touchStartY.current = null;
+
+    if (Math.abs(deltaY) < PAGE_GESTURE_THRESHOLD) {
+      return;
+    }
+
+    if (deltaY < 0 && recommendation) {
+      scrollArchiveTo("result");
+    }
+
+    if (deltaY > 0) {
+      scrollArchiveTo("map");
+    }
+  };
+
   return (
     <div className="h-screen w-full bg-[#111317] text-[#F5F5F0] font-serif overflow-hidden relative flex flex-col">
       <div className="film-grain"></div>
@@ -153,7 +234,12 @@ export default function App() {
           <button
             onClick={() => {
               setView("archive");
-              setRecommendation(null);
+              requestAnimationFrame(() => {
+                archiveViewportRef.current?.scrollTo({
+                  top: 0,
+                  behavior: "smooth",
+                });
+              });
             }}
             className={`transition-opacity ${view === "archive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
           >
@@ -206,12 +292,14 @@ export default function App() {
             )}
           </section>
         ) : (
-          <section className="flex-1 min-h-0 overflow-hidden relative">
-            <motion.div
-              className="absolute inset-0 flex flex-col md:flex-row w-full shrink-0"
-              animate={{ y: recommendation ? "-100%" : "0%" }}
-              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            >
+          <section
+            ref={archiveViewportRef}
+            className="flex-1 min-h-0 overflow-y-auto hidden-scrollbar scroll-smooth snap-y snap-mandatory"
+            onWheelCapture={handleArchiveWheel}
+            onTouchStartCapture={handleArchiveTouchStart}
+            onTouchEndCapture={handleArchiveTouchEnd}
+          >
+            <div className="h-full min-h-full snap-start flex flex-col md:flex-row w-full shrink-0">
                 <section className="w-full md:w-[65%] lg:w-[70%] relative border-b md:border-b-0 md:border-r border-[#ffffff20] flex flex-col min-h-[50vh] md:min-h-0 shrink-0">
                   <div className="absolute inset-0 bg-[#16181D] overflow-hidden">
                     <MapComponent onLocationSelect={handleLocationSelect} selectedLocation={selectedLocation} />
@@ -316,15 +404,16 @@ export default function App() {
                     </div>
                   </div>
                 </section>
-            </motion.div>
+            </div>
 
+            {recommendation ? (
               <motion.section
-                className="absolute inset-0 bg-[#111317] border-t border-white/20 flex flex-col p-6 md:p-12 lg:px-24"
-                animate={{ y: recommendation ? "0%" : "100%" }}
-                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                className="h-full min-h-full snap-start bg-[#111317] border-t border-white/20 flex flex-col p-6 md:p-12 lg:px-24"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
               >
-                {recommendation ? (
-                  <>
+                <>
                     <div className="flex justify-between items-baseline mb-8 shrink-0">
                       <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans">
                         Curation Result
@@ -390,15 +479,17 @@ export default function App() {
                           "{recommendation.overview || "A film selected for this weather mood."}"
                         </p>
                         <p className="text-xs md:text-sm tracking-widest leading-loose opacity-70 font-sans uppercase">
-                          Weather {recommendation.weather.weatherTag}. Temperature{" "}
-                          {recommendation.weather.temperatureTag}. Mood {recommendation.mood}. Match score{" "}
-                          {recommendation.score}.
+                          {formatRecommendationSummary({
+                            weatherTag: recommendation.weather.weatherTag,
+                            temperatureTag: recommendation.weather.temperatureTag,
+                            mood: recommendation.mood,
+                          })}
                         </p>
                       </div>
                     </motion.div>
-                  </>
-                ) : null}
+                </>
               </motion.section>
+            ) : null}
           </section>
         )}
 
