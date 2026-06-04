@@ -4,6 +4,7 @@ import { BookmarkCheck } from 'lucide-react';
 import { SavedMovie } from '../types';
 import { getPosterUrl } from '../api';
 import { MOOD_LABELS, getMovieChineseCopy } from '../localization';
+import { COLLECTION_POSTER_SIZE } from '../poster-loading';
 
 interface Props {
   key?: React.Key;
@@ -80,9 +81,11 @@ export function CollectionMovieCard({ movie, onToggleSave }: Props) {
             <div className="absolute inset-0 backface-hidden bg-[#1a1a1a] rounded overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)]">
               {movie.posterPath ? (
                 <img
-                  src={getPosterUrl(movie.posterPath)}
+                  src={getPosterUrl(movie.posterPath, COLLECTION_POSTER_SIZE)}
                   className="w-full h-full object-cover opacity-90 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-700"
                   alt={movie.title}
+                  loading="lazy"
+                  decoding="async"
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center font-sans text-[10px] uppercase tracking-[0.3em] text-white/35">

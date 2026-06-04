@@ -16,6 +16,12 @@ import { createScoredCandidates, pickTopCandidate } from "./recommendation";
 import { formatRecommendationSummary } from "./recommendation-summary";
 import { getFavorites, removeFavorite, saveFavorite } from "./storage";
 import type { MovieRecommendation, SavedMovie, WeatherData } from "./types";
+import {
+  COLLECTION_GRID_CLASS,
+  RECOMMENDATION_DETAIL_GRID_CLASS,
+  RECOMMENDATION_POSTER_COLUMN_CLASS,
+} from "./layout";
+import { RECOMMENDATION_POSTER_SIZE, preloadPosterImage } from "./poster-loading";
 
 const MOODS: { label: string; value: MoodTag }[] = [
   { label: "Relaxed", value: "relaxed" },
@@ -129,6 +135,7 @@ export default function App() {
       });
       const selected = pickTopCandidate(candidates);
       const movie = await getMovieDetails(selected.movie.tmdbId);
+      preloadPosterImage(movie.posterPath);
 
       setRecommendation({
         ...movie,
@@ -297,7 +304,7 @@ export default function App() {
                 No cinematic memories saved yet.
               </div>
             ) : (
-              <div className="flex-1 w-full mx-auto grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,18rem))] justify-start gap-8 pb-24 max-w-[90rem]">
+              <div className={COLLECTION_GRID_CLASS}>
                 {savedMovies.map((movie) => (
                   <CollectionMovieCard key={movie.id} movie={movie} onToggleSave={() => toggleSave(movie)} />
                 ))}
@@ -448,15 +455,18 @@ export default function App() {
                       initial={{ opacity: 0, y: 28 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                      className="flex-1 min-h-0 w-full mx-auto grid grid-cols-1 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-6 md:gap-8 max-w-6xl items-center"
+                      className={RECOMMENDATION_DETAIL_GRID_CLASS}
                     >
-                      <div className="min-h-0 flex items-center justify-center">
+                      <div className={RECOMMENDATION_POSTER_COLUMN_CLASS}>
                         <div className="h-[min(34vh,18rem)] md:h-[min(62vh,28rem)] aspect-[2/3] bg-[#1a1a1a] rounded-sm overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] relative">
                           {recommendation.posterPath ? (
                             <img
-                              src={getPosterUrl(recommendation.posterPath)}
+                              src={getPosterUrl(recommendation.posterPath, RECOMMENDATION_POSTER_SIZE)}
                               className="w-full h-full object-cover opacity-85 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700"
                               alt={recommendation.title}
+                              loading="eager"
+                              decoding="async"
+                              fetchPriority="high"
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center font-sans text-[10px] uppercase tracking-[0.3em] text-white/35">

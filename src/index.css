@@ -13,6 +13,16 @@ body {
   font-family: var(--font-sans);
 }
 
+.collection-grid {
+  --collection-grid-gap: clamp(1.25rem, 2vw, 2rem);
+  display: grid;
+  gap: var(--collection-grid-gap);
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, clamp(14rem, 18vw, 20rem)), 1fr)
+  );
+}
+
 /* Film grain effect overlay */
 .film-grain {
   position: fixed;
