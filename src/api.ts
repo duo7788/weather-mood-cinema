@@ -220,7 +220,7 @@ const getCuratedMovieDetails = (movieId: number): TmdbMovie => {
   return {
     id: movie.tmdbId,
     title: movie.title,
-    overview: "A curated TMDB title selected for this weather mood.",
+    overview: "",
     posterPath: null,
     releaseDate: "",
     rating: null,

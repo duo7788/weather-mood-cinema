@@ -4,6 +4,13 @@ import { Bookmark, BookmarkCheck, Loader2, Search } from "lucide-react";
 import { CollectionMovieCard } from "./components/CollectionMovieCard";
 import { MapComponent } from "./components/MapComponent";
 import { getMovieDetails, getPosterUrl, getWeatherByCity, getWeatherByCoords } from "./api";
+import {
+  formatChineseRecommendationSummary,
+  formatMovieRating,
+  getMoodDisplay,
+  getMovieChineseCopy,
+  getNavDisplay,
+} from "./localization";
 import { MOVIE_LIBRARY, type MoodTag } from "./movie-library";
 import { createScoredCandidates, pickTopCandidate } from "./recommendation";
 import { formatRecommendationSummary } from "./recommendation-summary";
@@ -145,6 +152,10 @@ export default function App() {
   const isRecommendationSaved = recommendation
     ? savedMovies.some((saved) => saved.id === recommendation.id)
     : false;
+  const recommendationChineseCopy = recommendation
+    ? getMovieChineseCopy(recommendation.id)
+    : null;
+  const recommendationRating = recommendation ? formatMovieRating(recommendation.rating) : "NR";
 
   useEffect(() => {
     const viewport = archiveViewportRef.current;
@@ -243,13 +254,15 @@ export default function App() {
             }}
             className={`transition-opacity ${view === "archive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
           >
-            Archive
+            <span>{getNavDisplay("archive").english}</span>
+            <span className="ml-2 opacity-70">{getNavDisplay("archive").chinese}</span>
           </button>
           <button
             onClick={() => setView("collections")}
             className={`transition-opacity hidden md:block ${view === "collections" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
           >
-            Collections
+            <span>{getNavDisplay("collections").english}</span>
+            <span className="ml-2 opacity-70">{getNavDisplay("collections").chinese}</span>
           </button>
         </div>
         <button
@@ -269,8 +282,8 @@ export default function App() {
         }`}
       >
         {view === "collections" ? (
-          <section className="w-full flex-1 bg-[#111317] flex flex-col p-6 md:p-16 lg:px-32">
-            <div className="flex justify-between items-baseline mb-16 shrink-0 pt-6">
+          <section className="w-full flex-1 bg-[#111317] flex flex-col p-6 md:p-12 lg:px-24">
+            <div className="flex justify-between items-baseline mb-8 shrink-0">
               <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans">
                 Your Collections
               </span>
@@ -284,7 +297,7 @@ export default function App() {
                 No cinematic memories saved yet.
               </div>
             ) : (
-              <div className="flex-1 w-full mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-24 max-w-7xl">
+              <div className="flex-1 w-full mx-auto grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,18rem))] justify-start gap-8 pb-24 max-w-[90rem]">
                 {savedMovies.map((movie) => (
                   <CollectionMovieCard key={movie.id} movie={movie} onToggleSave={() => toggleSave(movie)} />
                 ))}
@@ -299,7 +312,7 @@ export default function App() {
             onTouchStartCapture={handleArchiveTouchStart}
             onTouchEndCapture={handleArchiveTouchEnd}
           >
-            <div className="h-full min-h-full snap-start flex flex-col md:flex-row w-full shrink-0">
+            <div className="h-full min-h-full snap-start flex flex-col md:flex-row w-full shrink-0 overflow-hidden">
                 <section className="w-full md:w-[65%] lg:w-[70%] relative border-b md:border-b-0 md:border-r border-[#ffffff20] flex flex-col min-h-[50vh] md:min-h-0 shrink-0">
                   <div className="absolute inset-0 bg-[#16181D] overflow-hidden">
                     <MapComponent onLocationSelect={handleLocationSelect} selectedLocation={selectedLocation} />
@@ -359,33 +372,38 @@ export default function App() {
                   </div>
                 </section>
 
-                <section className="w-full md:w-[35%] lg:w-[30%] flex flex-col p-6 md:p-10 xl:p-12 bg-[#111317]">
+                <section className="w-full md:w-[35%] lg:w-[30%] flex flex-col p-6 md:px-10 md:py-6 xl:px-12 xl:py-7 bg-[#111317] min-h-0 overflow-hidden">
                   <div className="flex-1 flex flex-col justify-center shrink-0 relative z-10 min-h-0">
-                    <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans block mb-8 text-white">
+                    <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans block mb-5 text-white">
                       Select Mood
                     </span>
-                    <div className="flex flex-col gap-2.5 xl:gap-3">
-                      {MOODS.map((item) => (
-                        <button
-                          key={item.value}
-                          onClick={() => setMood(item.value)}
-                          className={`w-full py-2.5 xl:py-3 px-6 rounded border text-[11px] font-sans uppercase tracking-[0.2em] transition-all duration-300 ${
-                            mood === item.value
-                              ? "border-white/80 bg-white text-black font-semibold"
-                              : "border-white/20 text-[#F5F5F0] hover:bg-white/10 hover:border-white/40"
-                          }`}
-                          aria-pressed={mood === item.value}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
+                    <div className="flex flex-col gap-2">
+                      {MOODS.map((item) => {
+                        const moodDisplay = getMoodDisplay(item.value);
+
+                        return (
+                          <button
+                            key={item.value}
+                            onClick={() => setMood(item.value)}
+                            className={`w-full py-2 xl:py-2.5 px-6 rounded border text-[11px] font-sans uppercase tracking-[0.2em] transition-all duration-300 ${
+                              mood === item.value
+                                ? "border-white/80 bg-white text-black font-semibold"
+                                : "border-white/20 text-[#F5F5F0] hover:bg-white/10 hover:border-white/40"
+                            }`}
+                            aria-pressed={mood === item.value}
+                          >
+                            <span>{moodDisplay.english}</span>
+                            <span className="ml-3 opacity-70">{moodDisplay.chinese}</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    <div className="mt-8 xl:mt-10 pt-6 border-t border-white/20 flex flex-col items-center justify-center gap-4">
+                    <div className="mt-6 pt-5 border-t border-white/20 flex flex-col items-center justify-center gap-4">
                       <button
                         onClick={handleGetRecommendations}
                         disabled={!weather || !mood || isFetchingMovies}
-                        className="w-full sm:w-auto px-8 py-4 border border-white/40 text-[#F5F5F0] font-sans text-[11px] hover:bg-white hover:text-black transition-all duration-300 uppercase tracking-[0.2em] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#F5F5F0] flex items-center justify-center space-x-3 rounded"
+                        className="w-full sm:w-auto px-8 py-3 border border-white/40 text-[#F5F5F0] font-sans text-[11px] hover:bg-white hover:text-black transition-all duration-300 uppercase tracking-[0.2em] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#F5F5F0] flex items-center justify-center space-x-3 rounded"
                       >
                         {isFetchingMovies ? (
                           <>
@@ -418,9 +436,11 @@ export default function App() {
                       <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans">
                         Curation Result
                       </span>
-                      <span className="text-[10px] uppercase tracking-[0.1em] opacity-80 font-sans">
-                        Score {recommendation.score}
-                      </span>
+                      {recommendation.rating ? (
+                        <span className="text-[10px] uppercase tracking-[0.1em] opacity-80 font-sans">
+                          {recommendationRating}
+                        </span>
+                      ) : null}
                     </div>
 
                     <motion.div
@@ -455,10 +475,15 @@ export default function App() {
                             </span>
                             <h2 className="text-4xl md:text-6xl leading-[1.05] tracking-tight text-white">
                               {recommendation.title}
+                              {recommendationChineseCopy?.title ? (
+                                <span className="ml-3 inline-block align-baseline font-sans text-sm md:text-lg tracking-[0.16em] uppercase text-white/45">
+                                  {recommendationChineseCopy.title}
+                                </span>
+                              ) : null}
                             </h2>
                             <span className="text-lg opacity-60 font-light block mt-3">
                               ({recommendation.releaseDate ? recommendation.releaseDate.slice(0, 4) : "Film"}) ·{" "}
-                              {recommendation.rating ? recommendation.rating.toFixed(1) : "NR"}
+                              {recommendationRating}
                             </span>
                           </div>
                           <button
@@ -475,11 +500,25 @@ export default function App() {
                         </div>
 
                         <div className="h-[1px] w-full bg-white/20 my-6" />
-                        <p className="text-base md:text-xl leading-relaxed opacity-90 mb-6 italic text-[#F5F5F0] line-clamp-5">
-                          "{recommendation.overview || "A film selected for this weather mood."}"
-                        </p>
+                        {recommendation.overview ? (
+                          <p className="text-base md:text-xl leading-relaxed opacity-90 mb-6 italic text-[#F5F5F0] line-clamp-5">
+                            "{recommendation.overview}"
+                          </p>
+                        ) : null}
+                        {recommendationChineseCopy?.overview ? (
+                          <p className="font-sans text-xs md:text-sm leading-loose tracking-[0.16em] text-white/55 mb-6">
+                            {recommendationChineseCopy.overview}
+                          </p>
+                        ) : null}
                         <p className="text-xs md:text-sm tracking-widest leading-loose opacity-70 font-sans uppercase">
                           {formatRecommendationSummary({
+                            weatherTag: recommendation.weather.weatherTag,
+                            temperatureTag: recommendation.weather.temperatureTag,
+                            mood: recommendation.mood,
+                          })}
+                        </p>
+                        <p className="font-sans text-xs md:text-sm leading-loose tracking-[0.16em] text-white/45 mt-2">
+                          {formatChineseRecommendationSummary({
                             weatherTag: recommendation.weather.weatherTag,
                             temperatureTag: recommendation.weather.temperatureTag,
                             mood: recommendation.mood,

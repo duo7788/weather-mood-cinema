@@ -33,7 +33,7 @@ test("falls back to curated movie metadata when the local TMDB Function is unava
     assert.deepEqual(movie, {
       id: 843,
       title: "In the Mood for Love",
-      overview: "A curated TMDB title selected for this weather mood.",
+      overview: "",
       posterPath: null,
       releaseDate: "",
       rating: null,
