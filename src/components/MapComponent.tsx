@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -29,9 +28,9 @@ function LocationMarker({ onLocationSelect, selectedLocation }: MapProps) {
   ) : null;
 }
 
-// Dark/retro map tiles: standard OpenStreetMap with CSS filter, or CartoDB Dark Matter.
-// Let's use CartoDB Dark Matter for that deep, restrained cinematic look out of the box.
-const tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+// Vite injects this browser-visible, website-restricted key at build time.
+const cartoApiKey = import.meta.env.VITE_CARTO_API_KEY?.trim() ?? '';
+const tileUrl = `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoApiKey)}`;
 
 export function MapComponent({ onLocationSelect, selectedLocation }: MapProps) {
   return (
@@ -51,7 +50,7 @@ export function MapComponent({ onLocationSelect, selectedLocation }: MapProps) {
       >
         <TileLayer
           url={tileUrl}
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> &copy; <a href="https://carto.com/">CARTO</a>'
         />
         <LocationMarker onLocationSelect={onLocationSelect} selectedLocation={selectedLocation} />
       </MapContainer>
