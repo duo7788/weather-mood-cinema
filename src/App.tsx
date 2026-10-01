@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent, type TouchEvent, type WheelEvent } from "react";
-import { motion } from "motion/react";
+import { useRef, useState, type FormEvent } from "react";
+import { withMinimumDuration } from "./minimum-duration";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Bookmark, BookmarkCheck, Loader2, Search } from "lucide-react";
+import { MoodExpression } from "./components/MoodExpression";
+import { CurationProjector } from "./components/CurationProjector";
 import { CollectionMovieCard } from "./components/CollectionMovieCard";
 import { MapComponent } from "./components/MapComponent";
 import { getMovieDetails, getPosterUrl, getWeatherByCity, getWeatherByCoords } from "./api";
@@ -35,9 +38,10 @@ const MOODS: { label: string; value: MoodTag }[] = [
   { label: "Tense", value: "tense" },
 ];
 
-const PAGE_GESTURE_THRESHOLD = 48;
+
 
 export default function App() {
+  const reducedMotion = useReducedMotion();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [mood, setMood] = useState<MoodTag | "">("");
   const [cityQuery, setCityQuery] = useState("");
@@ -47,8 +51,9 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"archive" | "collections">("archive");
   const [savedMovies, setSavedMovies] = useState<SavedMovie[]>(() => getFavorites());
-  const archiveViewportRef = useRef<HTMLElement | null>(null);
-  const touchStartY = useRef<number | null>(null);
+  const [step, setStep] = useState<"location" | "mood" | "result">("location");
+  const locationRequest = useRef(0);
+  const loadingEntered = useRef<(() => void) | null>(null);
 
   const createSavedMovie = (movie: MovieRecommendation): SavedMovie => ({
     id: movie.id,
@@ -82,17 +87,19 @@ export default function App() {
   };
 
   const handleLocationSelect = async (coords: { lat: number; lng: number }) => {
+    const requestId = ++locationRequest.current;
     setIsFetchingWeather(true);
     setRecommendation(null);
     setError(null);
 
     try {
       const nextWeather = await getWeatherByCoords(coords.lat, coords.lng);
+      if (requestId !== locationRequest.current) return;
       setWeather(nextWeather);
     } catch {
-      setError("Atmospheric lookup failed.");
+      if (requestId === locationRequest.current) setError("Atmospheric lookup failed.");
     } finally {
-      setIsFetchingWeather(false);
+      if (requestId === locationRequest.current) setIsFetchingWeather(false);
     }
   };
 
@@ -104,26 +111,29 @@ export default function App() {
       return;
     }
 
+    const requestId = ++locationRequest.current;
     setIsFetchingWeather(true);
     setRecommendation(null);
     setError(null);
 
     try {
       const nextWeather = await getWeatherByCity(query);
+      if (requestId !== locationRequest.current) return;
       setWeather(nextWeather);
       setCityQuery("");
     } catch {
-      setError("City not found.");
+      if (requestId === locationRequest.current) setError("City not found.");
     } finally {
-      setIsFetchingWeather(false);
+      if (requestId === locationRequest.current) setIsFetchingWeather(false);
     }
   };
 
   const handleGetRecommendations = async () => {
-    if (!weather || !mood) {
+    if (!weather || !mood || isFetchingMovies) {
       return;
     }
 
+    const ready = new Promise<void>(resolve => { loadingEntered.current = resolve; });
     setIsFetchingMovies(true);
     setError(null);
 
@@ -134,8 +144,11 @@ export default function App() {
         moodTag: mood,
       });
       const selected = pickTopCandidate(candidates);
-      const movie = await getMovieDetails(selected.movie.tmdbId);
-      preloadPosterImage(movie.posterPath);
+      const movie = await withMinimumDuration(async () => {
+        const details = await getMovieDetails(selected.movie.tmdbId);
+        preloadPosterImage(details.posterPath);
+        return details;
+      }, undefined, ready);
 
       setRecommendation({
         ...movie,
@@ -143,6 +156,7 @@ export default function App() {
         mood,
         weather,
       });
+      setStep("result");
     } catch {
       setError("Movie data did not load.");
     } finally {
@@ -164,80 +178,15 @@ export default function App() {
     : null;
   const recommendationRating = recommendation ? formatMovieRating(recommendation.rating) : "NR";
 
-  useEffect(() => {
-    const viewport = archiveViewportRef.current;
-
-    if (view !== "archive" || !recommendation || !viewport) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      viewport.scrollTo({
-        top: viewport.clientHeight,
-        behavior: "smooth",
-      });
-    });
-  }, [recommendation, view]);
-
-  const scrollArchiveTo = (page: "map" | "result") => {
-    const viewport = archiveViewportRef.current;
-
-    if (!viewport) {
-      return;
-    }
-
-    viewport.scrollTo({
-      top: page === "result" ? viewport.clientHeight : 0,
-      behavior: "smooth",
-    });
-  };
-
-  const handleArchiveWheel = (event: WheelEvent<HTMLElement>) => {
-    if (Math.abs(event.deltaY) < PAGE_GESTURE_THRESHOLD) {
-      return;
-    }
-
-    if (event.deltaY > 0 && recommendation) {
-      event.preventDefault();
-      scrollArchiveTo("result");
-    }
-
-    if (event.deltaY < 0) {
-      event.preventDefault();
-      scrollArchiveTo("map");
-    }
-  };
-
-  const handleArchiveTouchStart = (event: TouchEvent<HTMLElement>) => {
-    touchStartY.current = event.touches[0]?.clientY ?? null;
-  };
-
-  const handleArchiveTouchEnd = (event: TouchEvent<HTMLElement>) => {
-    if (touchStartY.current === null) {
-      return;
-    }
-
-    const endY = event.changedTouches[0]?.clientY;
-
-    if (typeof endY !== "number") {
-      touchStartY.current = null;
-      return;
-    }
-
-    const deltaY = endY - touchStartY.current;
-    touchStartY.current = null;
-
-    if (Math.abs(deltaY) < PAGE_GESTURE_THRESHOLD) {
-      return;
-    }
-
-    if (deltaY < 0 && recommendation) {
-      scrollArchiveTo("result");
-    }
-
-    if (deltaY > 0) {
-      scrollArchiveTo("map");
-    }
+  const startNewRecommendation = () => {
+    locationRequest.current += 1;
+    setWeather(null);
+    setMood("");
+    setCityQuery("");
+    setRecommendation(null);
+    setError(null);
+    setIsFetchingWeather(false);
+    setStep("location");
   };
 
   return (
@@ -245,19 +194,17 @@ export default function App() {
       <div className="film-grain"></div>
 
       <header className="h-16 border-b border-[#ffffff20] flex items-center justify-between px-6 md:px-10 shrink-0 z-20 bg-[#111317]/80 backdrop-blur-sm relative">
-        <div className="text-[10px] tracking-[0.3em] uppercase font-sans font-semibold opacity-80">
-          Weather Mood Cinema / Ed. 01
+        <div className="cinema-brand-group">
+          <div className="text-[10px] tracking-[0.3em] uppercase font-sans font-semibold opacity-80">
+            Weather Mood Cinema / Ed. 01
+          </div>
+          <a className="cinema-intro-link" href="#">介绍页</a>
         </div>
         <div className="flex gap-8 text-[10px] tracking-[0.2em] uppercase font-sans">
           <button
             onClick={() => {
               setView("archive");
-              requestAnimationFrame(() => {
-                archiveViewportRef.current?.scrollTo({
-                  top: 0,
-                  behavior: "smooth",
-                });
-              });
+
             }}
             className={`transition-opacity ${view === "archive" ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
           >
@@ -288,7 +235,27 @@ export default function App() {
           view === "archive" ? "overflow-hidden" : "overflow-y-auto"
         }`}
       >
-        {view === "collections" ? (
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.section
+            className="flex flex-col flex-1 min-h-0 overflow-y-auto hidden-scrollbar"
+            key={isFetchingMovies ? "loading" : view === "collections" ? "collections" : step}
+            initial={{ opacity: 0, y: reducedMotion ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: reducedMotion ? 0 : -14 }}
+            transition={{ duration: reducedMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
+            onAnimationComplete={() => {
+              if (isFetchingMovies) {
+                loadingEntered.current?.();
+                loadingEntered.current = null;
+              }
+            }}
+          >
+        {isFetchingMovies ? (
+          <section className="curation-loading" role="status" aria-live="polite" aria-busy="true">
+            <CurationProjector />
+            <p><span className="curation-loading-english" lang="en">Finding a film for your weather and mood.</span><span className="curation-loading-chinese">正在根据地点的天气、心情</span><span className="curation-loading-chinese">为你挑选一部最适合的电影</span></p>
+          </section>
+        ) : view === "collections" ? (
           <section className="w-full flex-1 bg-[#111317] flex flex-col p-6 md:p-12 lg:px-24">
             <div className="flex justify-between items-baseline mb-8 shrink-0">
               <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans">
@@ -312,15 +279,9 @@ export default function App() {
             )}
           </section>
         ) : (
-          <section
-            ref={archiveViewportRef}
-            className="flex-1 min-h-0 overflow-y-auto hidden-scrollbar scroll-smooth snap-y snap-mandatory"
-            onWheelCapture={handleArchiveWheel}
-            onTouchStartCapture={handleArchiveTouchStart}
-            onTouchEndCapture={handleArchiveTouchEnd}
-          >
-            <div className="h-full min-h-full snap-start flex flex-col md:flex-row w-full shrink-0 overflow-hidden">
-                <section className="w-full md:w-[65%] lg:w-[70%] relative border-b md:border-b-0 md:border-r border-[#ffffff20] flex flex-col min-h-[50vh] md:min-h-0 shrink-0">
+          <>
+            {step === "location" ? (
+              <section className="h-full min-h-[360px] w-full relative flex flex-col">
                   <div className="absolute inset-0 bg-[#16181D] overflow-hidden">
                     <MapComponent onLocationSelect={handleLocationSelect} selectedLocation={selectedLocation} />
                   </div>
@@ -347,7 +308,7 @@ export default function App() {
                     </button>
                   </form>
 
-                  <div className="mt-auto p-6 md:p-12 z-10 bg-gradient-to-t from-[#111317] via-[#111317]/80 to-transparent pointer-events-none">
+                  <div className="location-weather mt-auto p-6 md:p-12 z-10 bg-gradient-to-t from-[#111317] via-[#111317]/80 to-transparent pointer-events-none">
                     {weather ? (
                       <>
                         <h1 className="text-6xl md:text-[112px] leading-[0.85] tracking-tighter italic font-light lowercase drop-shadow-lg text-white">
@@ -377,12 +338,27 @@ export default function App() {
                       </div>
                     ) : null}
                   </div>
+                  <div className="absolute top-24 left-6 md:left-10 z-20 font-sans text-[10px] tracking-widest text-white/60">选择地图上的地点，或搜索城市 · SELECT A LOCATION</div>
+                  {weather && (
+                    <div className="location-confirm">
+                      <button className="cinema-action" disabled={isFetchingWeather || Boolean(error)} onClick={() => setStep("mood")}>
+                        <span>Confirm Location</span><span>确认选择</span>
+                      </button>
+                    </div>
+                  )}
+                  {error && <p role="alert" className="absolute top-32 left-6 md:left-10 z-20 font-sans text-xs text-white">{error}</p>}
                 </section>
+            ) : null}
 
-                <section className="w-full md:w-[35%] lg:w-[30%] flex flex-col p-6 md:px-10 md:py-6 xl:px-12 xl:py-7 bg-[#111317] min-h-0 overflow-hidden">
-                  <div className="flex-1 flex flex-col justify-center shrink-0 relative z-10 min-h-0">
+            {step === "mood" ? (
+                <section className="mood-step">
+                  <div className="mood-location-summary font-sans">
+                    <span>{weather?.city} · {weather?.weather} · {weather?.temperature}°C</span>
+                    <button onClick={() => { setStep("location"); setError(null); }}>更换地点 / CHANGE LOCATION</button>
+                  </div>
+                  <div className="w-full flex flex-col relative z-10">
                     <span className="text-[10px] uppercase tracking-[0.4em] opacity-60 font-sans block mb-5 text-white">
-                      Select Mood
+                      Select Mood / 选择心情
                     </span>
                     <div className="flex flex-col gap-2">
                       {MOODS.map((item) => {
@@ -392,15 +368,18 @@ export default function App() {
                           <button
                             key={item.value}
                             onClick={() => setMood(item.value)}
-                            className={`w-full py-2 xl:py-2.5 px-6 rounded border text-[11px] font-sans uppercase tracking-[0.2em] transition-all duration-300 ${
+                            className={`mood-option relative w-full py-2 xl:py-2.5 px-10 rounded border text-[11px] font-sans uppercase tracking-[0.2em] transition-all duration-300 ${
                               mood === item.value
                                 ? "border-white/80 bg-white text-black font-semibold"
                                 : "border-white/20 text-[#F5F5F0] hover:bg-white/10 hover:border-white/40"
                             }`}
                             aria-pressed={mood === item.value}
                           >
-                            <span>{moodDisplay.english}</span>
-                            <span className="ml-3 opacity-70">{moodDisplay.chinese}</span>
+                            <span className="mood-option-label">
+                              <span>{moodDisplay.english}</span>
+                              <span className="ml-3 opacity-70">{moodDisplay.chinese}</span>
+                              <MoodExpression mood={item.value} />
+                            </span>
                           </button>
                         );
                       })}
@@ -410,16 +389,10 @@ export default function App() {
                       <button
                         onClick={handleGetRecommendations}
                         disabled={!weather || !mood || isFetchingMovies}
-                        className="w-full sm:w-auto px-8 py-3 border border-white/40 text-[#F5F5F0] font-sans text-[11px] hover:bg-white hover:text-black transition-all duration-300 uppercase tracking-[0.2em] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#F5F5F0] flex items-center justify-center space-x-3 rounded"
+                        className="cinema-action"
                       >
-                        {isFetchingMovies ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Curating...</span>
-                          </>
-                        ) : (
-                          <span>Unveil Recommendation</span>
-                        )}
+                        <span>Unveil Recommendation</span>
+                        <span>为我推荐一部电影</span>
                       </button>
                       {error ? (
                         <div className="text-red-400 font-sans text-[10px] uppercase tracking-wider text-center mt-4">
@@ -429,11 +402,11 @@ export default function App() {
                     </div>
                   </div>
                 </section>
-            </div>
+            ) : null}
 
-            {recommendation ? (
+            {step === "result" && recommendation ? (
               <motion.section
-                className="h-full min-h-full snap-start bg-[#111317] border-t border-white/20 flex flex-col p-6 md:p-12 lg:px-24"
+                className="min-h-full bg-[#111317] border-t border-white/20 flex flex-col p-6 md:p-12 lg:px-24"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4 }}
@@ -534,13 +507,20 @@ export default function App() {
                             mood: recommendation.mood,
                           })}
                         </p>
+                        <div className="flex justify-start mt-10 pb-4">
+                          <button className="cinema-action cinema-action-again" onClick={startNewRecommendation}>
+                            <span>Recommend Another Film</span><span>再推荐一部</span>
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                 </>
               </motion.section>
             ) : null}
-          </section>
+          </>
         )}
+          </motion.section>
+        </AnimatePresence>
 
         <footer className="h-16 px-6 md:px-10 border-t border-[#ffffff20] flex items-center justify-between text-[9px] tracking-[0.2em] uppercase opacity-60 font-sans shrink-0 bg-[#111317] relative z-20">
           <div>

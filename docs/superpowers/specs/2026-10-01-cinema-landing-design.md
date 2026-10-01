@@ -1,0 +1,9 @@
+# Cinema introduction homepage
+
+User selected the proposed product introduction homepage with an automatic demonstration, based on NotchNotes. Retain the cinema project's monochrome editorial identity. Default route shows a bilingual hero, entry button, a CSS laptop frame containing an illustrative demo, playback controls, and three short feature explanations. The real existing application opens at #app; browser back returns to the introduction.
+
+Demonstration uses local illustrative graphics and fixed example data (Shanghai, rain, nostalgia, In the Mood for Love), clearly labeled as a demo. Timeline: search city, weather, choose mood, recommendation, favorite. It does not call APIs or mutate favorites. Support pause, replay, step selection, reduced motion, and responsive screens. The actual app is loaded on entry to keep the introduction light. Verify build, existing tests, timeline boundaries, and browser display if available. Publishing requires the user's publication instruction for this change.
+
+Revision from annotated screenshots: neutral grayscale throughout; hero title at half previous size across breakpoints; remove hero description, CTA row and registration note; navigation label becomes 进入项目. Remove playback bar and keep automatic looping; step links remain and no longer pause playback. Reduced-motion setting still respected.
+
+Second user revision: extend automatic demo to 32.4 seconds. Cursor moves onto recommendation poster before grayscale fades to color, clicks save, moves to Collections, then hovers a collection poster and clicks to reveal the existing product's Chinese synopsis and weather/mood tags on a 180-degree back panel. Pause on the back for reading, flip to front, then loop. Collection sample cards are illustrative and never write real favorites. Keep typography poster artwork visibly labeled as an interpretation. Reuse the product localization copy. Eight step links support navigating the demonstration.
