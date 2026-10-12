@@ -160,3 +160,28 @@ test("falls back to direct geocoding and weather lookup when city Function is un
     global.fetch = originalFetch;
   }
 });
+
+test('stalled primary weather request switches to direct weather after timeout', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.method(globalThis, 'fetch', async input => {
+    const url = String(input);
+    if (url.startsWith('/')) return new Promise<Response>(() => {});
+    if (url.includes('nominatim')) return new Response(JSON.stringify({ address: { city: 'Shanghai' } }));
+    return new Response(JSON.stringify({ current: { temperature_2m: 18, weather_code: 3 } }));
+  });
+  const result = getWeatherByCoords(31.23, 121.47);
+  t.mock.timers.tick(10000);
+  const weather = await result;
+  assert.equal(weather.city, 'Shanghai');
+  assert.equal(weather.temperature, 18);
+});
+
+test('all weather services stalled eventually reject so the UI can leave loading', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.method(globalThis, 'fetch', () => new Promise<Response>(() => {}));
+  const checked = assert.rejects(getWeatherByCoords(31.23, 121.47), /timed out/);
+  t.mock.timers.tick(10000);
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+  t.mock.timers.tick(8000);
+  await checked;
+});

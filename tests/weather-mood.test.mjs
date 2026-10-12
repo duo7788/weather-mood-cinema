@@ -189,3 +189,19 @@ test("returns 404 when city cannot be geocoded", async () => {
     error: "City not found",
   });
 });
+
+test('slow place lookup falls back to coordinates without blocking real weather', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.method(globalThis, 'fetch', async url => {
+    if (String(url).includes('nominatim')) return new Promise(() => {});
+    return new Response(JSON.stringify({ current: { temperature_2m: 18, weather_code: 3 } }));
+  });
+  const result = handler(new Request('https://example.com?lat=31.23&lng=121.47'));
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+  t.mock.timers.tick(2000);
+  const response = await result;
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.city, '31.23°N, 121.47°E');
+  assert.equal(data.temperature, 18);
+});

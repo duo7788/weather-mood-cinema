@@ -1,3 +1,4 @@
+import { fetchJsonWithTimeout } from "../../shared/request-timeout.mjs";
 const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 const REVERSE_GEOCODING_URL = "https://nominatim.openstreetmap.org/reverse";
@@ -90,15 +91,7 @@ const getWeatherDescription = (weatherCode) => {
   return group?.description || "changing, atmospheric texture";
 };
 
-const fetchJson = async (url, init) => {
-  const response = await fetch(url, init);
-
-  if (!response.ok) {
-    throw new Error("Open-Meteo request failed");
-  }
-
-  return response.json();
-};
+const fetchJson = fetchJsonWithTimeout;
 
 const buildForecastUrl = (latitude, longitude) => {
   const forecastUrl = new URL(FORECAST_URL);
@@ -149,10 +142,10 @@ const lookupPlaceByCoordinates = async (latitude, longitude) => {
   try {
     const place = await fetchJson(buildReverseGeocodingUrl(latitude, longitude), {
       headers: {
-        "User-Agent": "WeatherMoodCinema/1.0 (https://weather-mood-cinema.netlify.app)",
-        Referer: "https://weather-mood-cinema.netlify.app",
+        "User-Agent": "WeatherMoodCinema/1.0 (https://weather-mood-cinema.vercel.app)",
+        Referer: "https://weather-mood-cinema.vercel.app",
       },
-    });
+    }, 2000);
 
     return getReadablePlace(place, latitude, longitude);
   } catch {
@@ -228,7 +221,7 @@ export default async (request) => {
     geocodingUrl.searchParams.set("language", "en");
     geocodingUrl.searchParams.set("format", "json");
 
-    const geocodingData = await fetchJson(geocodingUrl);
+    const geocodingData = await fetchJson(geocodingUrl, {}, 4000);
     const location = geocodingData.results?.[0];
 
     if (!location) {
@@ -237,7 +230,7 @@ export default async (request) => {
       });
     }
 
-    const forecastData = await fetchJson(buildForecastUrl(location.latitude, location.longitude));
+    const forecastData = await fetchJson(buildForecastUrl(location.latitude, location.longitude), {}, 4000);
 
     return jsonResponse(
       200,

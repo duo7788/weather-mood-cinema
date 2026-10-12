@@ -97,7 +97,7 @@ export default function App() {
       if (requestId !== locationRequest.current) return;
       setWeather(nextWeather);
     } catch {
-      if (requestId === locationRequest.current) setError("Atmospheric lookup failed.");
+      if (requestId === locationRequest.current) setError("天气暂时无法获取，请重新选点或搜索城市。 / Weather unavailable. Please try again.");
     } finally {
       if (requestId === locationRequest.current) setIsFetchingWeather(false);
     }
@@ -122,7 +122,7 @@ export default function App() {
       setWeather(nextWeather);
       setCityQuery("");
     } catch {
-      if (requestId === locationRequest.current) setError("City not found.");
+      if (requestId === locationRequest.current) setError("暂时无法获取该城市天气，请重试或在地图上选点。 / Unable to load city weather. Please try again.");
     } finally {
       if (requestId === locationRequest.current) setIsFetchingWeather(false);
     }

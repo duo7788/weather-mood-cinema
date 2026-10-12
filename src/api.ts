@@ -1,3 +1,4 @@
+import { fetchJsonWithTimeout } from "../shared/request-timeout.mjs";
 import type { TmdbMovie, WeatherData } from "./types";
 import { MOVIE_LIBRARY } from "./movie-library";
 
@@ -25,15 +26,8 @@ export const buildWeatherByCoordsUrl = (lat: number, lng: number) =>
 export const buildMovieDetailUrl = (movieId: number) =>
   `/.netlify/functions/movie-search?id=${encodeURIComponent(movieId)}`;
 
-const fetchJson = async <T>(url: string): Promise<T> => {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-  }
-
-  return response.json() as Promise<T>;
-};
+const fetchJson = <T>(url: string, timeoutMs = 8000): Promise<T> =>
+  fetchJsonWithTimeout(url, {}, timeoutMs) as Promise<T>;
 
 const getWeatherTag = (weatherCode: number): { weather: string; weatherTag: WeatherTag } => {
   if ([0, 1].includes(weatherCode)) return { weather: "Clear sky", weatherTag: "clear" };
@@ -115,7 +109,7 @@ const getReadablePlace = (place: ReverseGeocodingResult, lat: number, lng: numbe
 
 const getPlaceByCoords = async (lat: number, lng: number) => {
   try {
-    const place = await fetchJson<ReverseGeocodingResult>(buildReverseGeocodingUrl(lat, lng));
+    const place = await fetchJson<ReverseGeocodingResult>(buildReverseGeocodingUrl(lat, lng), 2000);
     return getReadablePlace(place, lat, lng);
   } catch {
     return {
@@ -182,7 +176,7 @@ const getDirectWeatherByCoords = async (
 
 export const getWeatherByCoords = async (lat: number, lng: number) => {
   try {
-    return await fetchJson<WeatherData>(buildWeatherByCoordsUrl(lat, lng));
+    return await fetchJson<WeatherData>(buildWeatherByCoordsUrl(lat, lng), 10000);
   } catch {
     return getDirectWeatherByCoords(lat, lng);
   }
@@ -190,7 +184,7 @@ export const getWeatherByCoords = async (lat: number, lng: number) => {
 
 export const getWeatherByCity = async (city: string) => {
   try {
-    return await fetchJson<WeatherData>(buildWeatherByCityUrl(city));
+    return await fetchJson<WeatherData>(buildWeatherByCityUrl(city), 10000);
   } catch {
     const geocoding = await fetchJson<{
       results?: Array<{ name: string; country?: string; latitude: number; longitude: number }>;
